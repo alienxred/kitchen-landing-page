@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forma Cocinas — Cocinas a Medida</title>
+  <meta name="description" content="Forma Cocinas — Diseño y fabricación de cocinas a medida con materiales premium. Más de 15 años transformando espacios.">
+  <meta property="og:title" content="Forma Cocinas — Cocinas a Medida">
+  <meta property="og:description" content="Diseño y fabricación de cocinas a medida con materiales premium.">
+  <meta property="og:type" content="website">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ====== LOADER ====== -->
+  <div id="loader">
+    <div class="loader-brand" id="loader-brand" aria-label="Forma">
+      <span class="loader-char" style="--i:0">F</span>
+      <span class="loader-char" style="--i:1">o</span>
+      <span class="loader-char" style="--i:2">r</span>
+      <span class="loader-char" style="--i:3">m</span>
+      <span class="loader-char" style="--i:4">a</span>
+    </div>
+    <div class="loader-progress" id="loader-progress"></div>
+  </div>
+
+  <!-- ====== PAGE WRAPPER (for loader reveal) ====== -->
+  <div class="page-wrapper" id="page-wrapper">
+
+  <!-- ====== HEADER ====== -->
+  <header class="site-header">
+    <nav class="nav-bar">
+      <a href="#" class="nav-logo">Forma</a>
+      <div class="nav-links">
+        <a href="#proceso">Proceso</a>
+        <a href="#proyectos">Proyectos</a>
+        <a href="#contacto">Contacto</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ====== SECTION 1: HERO ====== -->
+  <section class="section section-hero" id="hero">
+    <div class="hero-head">
+      <span class="hero-label">Cocinas a medida</span>
+      <h1 class="hero-headline">Forma Cocinas</h1>
+      <div class="hero-rule"></div>
+      <p class="hero-tagline"><em>Donde cada detalle tiene intenci&oacute;n.</em></p>
+    </div>
+    <div class="hero-video-wrap" id="hero-video-wrap">
+      <video class="hero-video-bg" id="hero-bg-video"
+             poster="assets/hero.webp"
+             muted autoplay playsinline>
+        <source src="assets/hero-video.mp4" type="video/mp4">
+      </video>
+    </div>
+    <button class="hero-fullscreen-text" id="hero-fullscreen" type="button">Fullscreen</button>
+    <button class="hero-expand-btn" id="hero-expand" type="button" aria-label="Expandir video">
+      <svg width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0.35 8.14V8.81H16.62V8.14H0.35Z" fill="currentColor"/>
+        <path d="M8.15 16.63H8.82V0.36H8.15V16.63Z" fill="currentColor"/>
+      </svg>
+    </button>
+  </section>
+
+  <!-- ====== SECTION 2: MANIFESTO (Giant Typography) ====== -->
+  <section class="section section-manifesto" id="manifesto">
+    <div class="manifesto-inner reveal-stagger">
+      <span class="label">001 &mdash; Filosof&iacute;a</span>
+      <h2 class="manifesto-headline">
+        <span class="word-line"><span class="word-inner">Dise&ntilde;amos</span></span>
+        <span class="word-line"><span class="word-inner">espacios que</span></span>
+        <span class="word-line"><span class="word-inner accent-italic">se viven.</span></span>
+      </h2>
+      <div class="manifesto-body">
+        <div class="manifesto-rule"></div>
+        <p class="body-text">
+          Cada cocina es &uacute;nica porque cada hogar lo es. Trabajamos desde la escucha, entendiendo c&oacute;mo vives, c&oacute;mo cocinas, c&oacute;mo compartes.
+        </p>
+      </div>
+    </div>
+    <!-- Floating photos on the right, revealed on scroll -->
+    <div class="manifesto-photos">
+      <div class="manifesto-photo manifesto-photo-1">
+        <img src="assets/kitchen-portrait-1.webp" alt="Detalle de materiales" loading="lazy">
+      </div>
+      <div class="manifesto-photo manifesto-photo-2">
+        <img src="assets/detail-marble.jpg" alt="Cocina de m&aacute;rmol" loading="lazy">
+      </div>
+      <div class="manifesto-photo manifesto-photo-3">
+        <img src="assets/kitchen-portrait-2.webp" alt="Acabados de cocina" loading="lazy">
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== SECTION 4: NÚMEROS (Animated Counters) ====== -->
+  <section class="section section-numeros">
+    <div class="numeros-inner">
+      <div class="numero-item">
+        <span class="numero-value" data-target="12">0</span>
+        <span class="numero-label">A&ntilde;os de<br>experiencia</span>
+      </div>
+      <div class="numero-divider"></div>
+      <div class="numero-item">
+        <span class="numero-value" data-target="340">0</span>
+        <span class="numero-label">Proyectos<br>entregados</span>
+      </div>
+      <div class="numero-divider"></div>
+      <div class="numero-item">
+        <span class="numero-value" data-target="15">0</span>
+        <span class="numero-label">Tipos de<br>materiales</span>
+      </div>
+      <div class="numero-divider"></div>
+      <div class="numero-item">
+        <span class="numero-value" data-target="98" data-suffix="%">0</span>
+        <span class="numero-label">Clientes<br>satisfechos</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== SECTION 5: PROCESO (Scroll-Linked Video) ====== -->
+  <section class="section section-video" id="proceso">
+    <div class="video-bg">
+      <video id="hero-video" src="assets/kitchen-seekable.mp4" muted playsinline preload="auto"></video>
+      <div class="video-vignette"></div>
+      <div class="video-text-layer" id="video-text-layer">
+
+        <span class="video-section-label">002 &mdash; Proceso</span>
+
+        <!-- Timeline rail (right side) -->
+        <div class="timeline-rail" id="timeline-rail">
+          <div class="timeline-line"></div>
+          <div class="timeline-progress" id="timeline-progress"></div>
+          <div class="timeline-dash" data-step="0"></div>
+          <div class="timeline-dash" data-step="1"></div>
+          <div class="timeline-dash" data-step="2"></div>
+          <div class="timeline-dash" data-step="3"></div>
+        </div>
+
+        <!-- Step 1: Obra Gris -->
+        <div class="video-moment" data-start="0.00" data-end="0.22">
+          <span class="step-number">01</span>
+          <h3 class="step-title">Obra Gris</h3>
+          <p class="step-duration">Semana 1&ndash;2</p>
+          <p class="step-desc">Recibimos el espacio en obra gris. Tomamos medidas precisas, evaluamos instalaciones hidr&aacute;ulicas, el&eacute;ctricas y de gas para planear cada detalle.</p>
+        </div>
+
+        <!-- Step 2: Diseno -->
+        <div class="video-moment" data-start="0.24" data-end="0.48">
+          <span class="step-number">02</span>
+          <h3 class="step-title">Dise&ntilde;o</h3>
+          <p class="step-duration">Semana 3&ndash;5</p>
+          <p class="step-desc">Creamos tu cocina en 3D. Materiales, colores, distribuci&oacute;n &mdash; cada decisi&oacute;n pensada para tu forma de vivir. Iteramos hasta que sea perfecta.</p>
+        </div>
+
+        <!-- Step 3: Fabricacion -->
+        <div class="video-moment" data-start="0.50" data-end="0.73">
+          <span class="step-number">03</span>
+          <h3 class="step-title">Fabricaci&oacute;n</h3>
+          <p class="step-duration">Semana 6&ndash;10</p>
+          <p class="step-desc">Producci&oacute;n con maquinaria CNC de alta precisi&oacute;n. Cada pieza cortada al mil&iacute;metro, cada acabado supervisado a mano.</p>
+        </div>
+
+        <!-- Step 4: Instalacion -->
+        <div class="video-moment" data-start="0.75" data-end="1.00">
+          <span class="step-number">04</span>
+          <h3 class="step-title">Instalaci&oacute;n</h3>
+          <p class="step-duration">Semana 11&ndash;12</p>
+          <p class="step-desc">Nuestro equipo instala cada m&oacute;dulo con precisi&oacute;n milim&eacute;trica. Ajustes finales, limpieza y entrega de tu cocina lista para vivir.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== SECTION 6: PRINCIPIO (Typography Statement, Dark) ====== -->
+  <section class="section section-principio">
+    <div class="principio-inner reveal-stagger">
+      <div class="principio-rule"></div>
+      <blockquote class="principio-quote">
+        <span class="quote-line">La forma sigue</span>
+        <span class="quote-line">a la funci&oacute;n.</span>
+        <span class="quote-line accent-italic">La funci&oacute;n sigue</span>
+        <span class="quote-line accent-italic">a la vida.</span>
+      </blockquote>
+      <cite class="principio-cite">&mdash; Principio Forma</cite>
+    </div>
+  </section>
+
+  <!-- ====== SECTION 7: MATERIALES (Full-Bleed Image Hero) ====== -->
+  <section class="section section-materiales">
+    <div class="materiales-image-wrap">
+      <img src="assets/kitchen-wide-1.webp" alt="Materiales de alta calidad" loading="lazy" class="materiales-image">
+    </div>
+    <div class="materiales-overlay"></div>
+    <div class="materiales-content reveal-stagger">
+      <span class="label label-light">003 &mdash; Materiales</span>
+      <h2 class="heading-display heading-light">Calidad que<br>se siente.</h2>
+      <p class="body-text body-text-light">
+        Superficies de cuarzo, maderas certificadas, herrajes europeos &mdash; porque los detalles invisibles definen la calidad visible.
+      </p>
+    </div>
+  </section>
+
+  <!-- ====== SECTION 9: ENFOQUE (Editorial Split + Detail Image) ====== -->
+  <section class="section section-enfoque">
+    <div class="enfoque-grid">
+      <div class="enfoque-content reveal-stagger">
+        <span class="label">005 &mdash; Enfoque</span>
+        <h2 class="heading-display">Dise&ntilde;o<br>integral.</h2>
+        <p class="body-text">
+          No solo dise&ntilde;amos muebles &mdash; dise&ntilde;amos la experiencia completa. Iluminaci&oacute;n, flujo de trabajo, almacenamiento inteligente. Cada elemento en di&aacute;logo con los dem&aacute;s.
+        </p>
+      </div>
+      <div class="enfoque-image clip-reveal">
+        <img src="assets/kitchen-pendant.jpg" alt="Dise&ntilde;o integral de cocina" loading="lazy">
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== SECTION 10: DETAIL BREAK (Full-width single image) ====== -->
+  <section class="section section-detail-break">
+    <div class="detail-break-wrap">
+      <img src="assets/kitchen-dark.jpg" alt="Detalle de cocina oscura" loading="lazy" class="detail-break-image">
+    </div>
+  </section>
+
+  <!-- ====== SECTION 11: PROYECTOS (Expanded Gallery) ====== -->
+  <section class="section section-proyectos" id="proyectos">
+    <div class="proyectos-header reveal-stagger">
+      <span class="label">006 &mdash; Proyectos</span>
+      <h2 class="heading-display">Selecci&oacute;n de<br>trabajos recientes.</h2>
+    </div>
+    <div class="proyectos-grid">
+      <div class="gallery-item gallery-wide" data-project="0" data-speed="0.9">
+        <img src="assets/kitchen-wide-2.webp" alt="Residencia San &Aacute;ngel" loading="lazy">
+        <div class="gallery-overlay">
+          <span class="gallery-name">Residencia San &Aacute;ngel</span>
+          <div class="gallery-tags">
+            <span class="gallery-tag">Residencial</span>
+            <span class="gallery-tag">2025</span>
+          </div>
+        </div>
+      </div>
+      <div class="gallery-item gallery-tall" data-project="1" data-speed="1.1">
+        <img src="assets/gallery-1.webp" alt="Loft Condesa" loading="lazy">
+        <div class="gallery-overlay">
+          <span class="gallery-name">Loft Condesa</span>
+          <div class="gallery-tags">
+            <span class="gallery-tag">Loft</span>
+            <span class="gallery-tag">2024</span>
+          </div>
+        </div>
+      </div>
+      <div class="gallery-item" data-project="2" data-speed="1.0">
+        <img src="assets/gallery-2.webp" alt="Casa Pedregal" loading="lazy">
+        <div class="gallery-overlay">
+          <span class="gallery-name">Casa Pedregal</span>
+          <div class="gallery-tags">
+            <span class="gallery-tag">Residencial</span>
+            <span class="gallery-tag">2024</span>
+          </div>
+        </div>
+      </div>
+      <div class="gallery-item" data-project="3" data-speed="0.8">
+        <img src="assets/gallery-3.webp" alt="Departamento Polanco" loading="lazy">
+        <div class="gallery-overlay">
+          <span class="gallery-name">Departamento Polanco</span>
+          <div class="gallery-tags">
+            <span class="gallery-tag">Departamento</span>
+            <span class="gallery-tag">2025</span>
+          </div>
+        </div>
+      </div>
+      <div class="gallery-item gallery-wide" data-project="4" data-speed="1.2">
+        <img src="assets/kitchen-square.webp" alt="Residencia Bosques" loading="lazy">
+        <div class="gallery-overlay">
+          <span class="gallery-name">Residencia Bosques</span>
+          <div class="gallery-tags">
+            <span class="gallery-tag">Residencial</span>
+            <span class="gallery-tag">2023</span>
+          </div>
+        </div>
+      </div>
+      <div class="gallery-item" data-project="5" data-speed="0.9">
+        <img src="assets/interiors-media.jpg" alt="Interiores Integrales" loading="lazy">
+        <div class="gallery-overlay">
+          <span class="gallery-name">Interiores Integrales</span>
+          <div class="gallery-tags">
+            <span class="gallery-tag">Comercial</span>
+            <span class="gallery-tag">2024</span>
+          </div>
+        </div>
+      </div>
+      <div class="gallery-item gallery-tall" data-project="6" data-speed="1.1">
+        <img src="assets/kitchen-dark.jpg" alt="Penthouse Reforma" loading="lazy">
+        <div class="gallery-overlay">
+          <span class="gallery-name">Penthouse Reforma</span>
+          <div class="gallery-tags">
+            <span class="gallery-tag">Penthouse</span>
+            <span class="gallery-tag">2025</span>
+          </div>
+        </div>
+      </div>
+      <div class="gallery-item gallery-wide" data-project="7" data-speed="0.8">
+        <img src="assets/kitchen-pendant.jpg" alt="Villa Coyoac&aacute;n" loading="lazy">
+        <div class="gallery-overlay">
+          <span class="gallery-name">Villa Coyoac&aacute;n</span>
+          <div class="gallery-tags">
+            <span class="gallery-tag">Residencial</span>
+            <span class="gallery-tag">2024</span>
+          </div>
+        </div>
+      </div>
+      <div class="gallery-item" data-project="8" data-speed="1.0">
+        <img src="assets/kitchen-portrait-1.webp" alt="Estudio Narvarte" loading="lazy">
+        <div class="gallery-overlay">
+          <span class="gallery-name">Estudio Narvarte</span>
+          <div class="gallery-tags">
+            <span class="gallery-tag">Estudio</span>
+            <span class="gallery-tag">2024</span>
+          </div>
+        </div>
+      </div>
+      <div class="gallery-item gallery-wide" data-project="9" data-speed="1.2">
+        <img src="assets/outdoor-kitchen.jpg" alt="Casa de Campo" loading="lazy">
+        <div class="gallery-overlay">
+          <span class="gallery-name">Casa de Campo</span>
+          <div class="gallery-tags">
+            <span class="gallery-tag">Residencial</span>
+            <span class="gallery-tag">2023</span>
+          </div>
+        </div>
+      </div>
+      <div class="gallery-item" data-project="10" data-speed="0.9">
+        <img src="assets/kitchen-portrait-2.webp" alt="Suite Santa Fe" loading="lazy">
+        <div class="gallery-overlay">
+          <span class="gallery-name">Suite Santa Fe</span>
+          <div class="gallery-tags">
+            <span class="gallery-tag">Departamento</span>
+            <span class="gallery-tag">2025</span>
+          </div>
+        </div>
+      </div>
+      <div class="gallery-item gallery-tall" data-project="11" data-speed="1.1">
+        <img src="assets/kitchen-wide-1.webp" alt="Terraza Lomas" loading="lazy">
+        <div class="gallery-overlay">
+          <span class="gallery-name">Terraza Lomas</span>
+          <div class="gallery-tags">
+            <span class="gallery-tag">Terraza</span>
+            <span class="gallery-tag">2024</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== SECTION 12: CONTACTO (CTA with background) ====== -->
+  <section class="section section-contacto" id="contacto">
+    <div class="contacto-bg">
+      <img src="assets/detail-marble.jpg" alt="" class="contacto-bg-image" loading="lazy">
+    </div>
+    <div class="contacto-overlay"></div>
+    <div class="contacto-inner reveal-stagger">
+      <span class="label label-light">Contacto</span>
+      <h2 class="contacto-headline">&iquest;Comenzamos<br>tu proyecto?</h2>
+      <p class="body-text body-text-light body-text-center">
+        Cada cocina comienza con una conversaci&oacute;n. Cu&eacute;ntanos sobre tu espacio y tus ideas &mdash; nosotros nos encargamos del resto.
+      </p>
+      <a href="mailto:hola@formacocinas.mx" class="cta-button">Escr&iacute;benos</a>
+    </div>
+  </section>
+
+  <!-- ====== FOOTER ====== -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <span class="footer-brand">Forma Cocinas</span>
+      <span class="footer-tagline">Dise&ntilde;o &middot; Fabricaci&oacute;n &middot; Instalaci&oacute;n</span>
+      <div class="footer-links">
+        <a href="#proceso">Proceso</a>
+        <a href="#proyectos">Proyectos</a>
+        <a href="#contacto">Contacto</a>
+      </div>
+    </div>
+    <span class="footer-copy">&copy; 2026 Forma Cocinas</span>
+  </footer>
+
+  </div><!-- /.page-wrapper -->
+
+  <!-- ====== PROJECT DETAIL OVERLAY ====== -->
+  <div class="project-detail" id="project-detail" data-lenis-prevent>
+    <button class="project-close" id="project-close" aria-label="Cerrar proyecto">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <!-- Content dynamically injected by JS: hero-area + detail-inner -->
+    <div class="project-detail-inner" id="project-detail-inner"></div>
+  </div>
+
+  <!-- ====== SECTION INDICATOR ====== -->
+  <div class="section-indicator" id="section-indicator">
+    <span class="indicator-text" id="indicator-text"></span>
+    <svg class="indicator-arrow-svg" width="10" height="10" viewBox="0 0 10 10" fill="none">
+      <path d="M5 1v7M2 5.5L5 8.5 8 5.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+
+  <!-- ====== CUSTOM CURSOR ====== -->
+  <div class="custom-cursor" id="custom-cursor">
+    <div class="cursor-dot"></div>
+    <span class="cursor-text" id="cursor-text"></span>
+  </div>
+
+  <!-- ====== SCRIPTS ====== -->
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1/dist/lenis.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/ScrollTrigger.min.js"></script>
+  <script src="script.js"></script>
+
+</body>
+</html>

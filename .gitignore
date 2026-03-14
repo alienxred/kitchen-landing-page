@@ -1,0 +1,16 @@
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor/IDE
+.vscode/
+.idea/
+.claude/
+
+# Dependencies
+node_modules/
+
+# Large media formats
+*.mov
+*.avi
