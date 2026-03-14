@@ -46,10 +46,11 @@
     if (!loader) return;
 
     // Skip on return visits
-    if (sessionStorage.getItem("forma-visited")) {
+    if (sessionStorage.getItem("adentro-visited")) {
       loader.remove();
       if (pageWrapper) pageWrapper.classList.add("no-anim", "revealed");
       loaderExited = true;
+      initHeroRotation();
       initScrollAnimations();
       return;
     }
@@ -109,7 +110,7 @@
   function exitLoader() {
     if (loaderExited || !loader) return;
     loaderExited = true;
-    sessionStorage.setItem("forma-visited", "1");
+    sessionStorage.setItem("adentro-visited", "1");
 
     // Part B: Fade out loader, reveal page with border-radius animation
     loader.classList.add("fade-out");
@@ -125,6 +126,33 @@
     setTimeout(() => {
       loader.remove();
     }, 800);
+
+    // Start hero rotating words after loader exits
+    setTimeout(initHeroRotation, 600);
+  }
+
+  // ============================================================
+  // HERO ROTATING WORDS
+  // ============================================================
+  function initHeroRotation() {
+    const divider = document.querySelector(".hero-divider");
+    const words = document.querySelectorAll(".hero-rotating-word");
+    const wrap = document.querySelector(".hero-rotating-wrap");
+    if (!words.length || !wrap) return;
+
+    // Reveal the divider
+    if (divider) divider.classList.add("visible");
+
+    // Set initial width to match active word
+    wrap.style.width = words[0].scrollWidth + "px";
+
+    let current = 0;
+    setInterval(() => {
+      words[current].classList.remove("active");
+      current = (current + 1) % words.length;
+      words[current].classList.add("active");
+      wrap.style.width = words[current].scrollWidth + "px";
+    }, 2500);
   }
 
   // ============================================================
@@ -148,6 +176,7 @@
   let lastSetTime = -1;
   let videoReady = false;
   let videoST = null;
+  let videoTickId = null;
 
   // Preload video as blob for instant seeking
   function preloadVideo() {
@@ -208,20 +237,32 @@
     if (typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") return;
     if (!videoSection) return;
 
-    gsap.registerPlugin(ScrollTrigger);
-
     videoST = ScrollTrigger.create({
       trigger: videoSection,
       start: "top top",
       end: "+=400%",
-      pin: true
+      pin: true,
+      onEnter: startVideoTick,
+      onEnterBack: startVideoTick,
+      onLeave: stopVideoTick,
+      onLeaveBack: stopVideoTick,
     });
 
     window.addEventListener("scroll", onVideoScroll, { passive: true });
     onVideoScroll();
+  }
 
+  function startVideoTick() {
+    if (videoTickId) return;
     lastTimestamp = performance.now();
-    requestAnimationFrame(videoTick);
+    videoTickId = requestAnimationFrame(videoTick);
+  }
+
+  function stopVideoTick() {
+    if (videoTickId) {
+      cancelAnimationFrame(videoTickId);
+      videoTickId = null;
+    }
   }
 
   // ============================================================
@@ -273,7 +314,7 @@
       video.currentTime = clamped;
     }
 
-    requestAnimationFrame(videoTick);
+    videoTickId = requestAnimationFrame(videoTick);
   }
 
   // ============================================================
@@ -432,20 +473,6 @@
   }
 
   // ============================================================
-  // SCROLL HINT FADE
-  // ============================================================
-  function initScrollHint() {
-    const hint = document.querySelector(".scroll-hint");
-    if (!hint) return;
-
-    window.addEventListener("scroll", () => {
-      const scrollY = window.scrollY;
-      const opacity = scrollY < 50 ? 1 : Math.max(0, 1 - (scrollY - 50) / 150);
-      hint.style.opacity = opacity;
-    }, { passive: true });
-  }
-
-  // ============================================================
   // GSAP: PARALLAX EFFECTS
   // ============================================================
   function initGSAP() {
@@ -495,7 +522,7 @@
       if (!isMobileTrans) {
         // Manifesto reveals through expanding clip-path window
         gsap.fromTo(manifestoSection,
-          { clipPath: "inset(12% 12% 12% 12% round 12px)" },
+          { clipPath: "inset(4% 4% 4% 4% round 8px)" },
           {
             clipPath: "inset(0% 0% 0% 0% round 0px)",
             ease: "none",
@@ -589,9 +616,11 @@
     gsap.utils.toArray(".gallery-item").forEach((item) => {
       const speed = parseFloat(item.dataset.speed) || 1.0;
 
-      // Assign depth class for CSS blur/scale/opacity
-      const depthClass = depthClassMap[item.dataset.speed] || "depth-mid";
-      item.classList.add(depthClass);
+      // Assign depth class for CSS scale/opacity (skip on mobile)
+      if (!isMobileGallery) {
+        const depthClass = depthClassMap[item.dataset.speed] || "depth-mid";
+        item.classList.add(depthClass);
+      }
 
       // Parallax depth movement — amplified, disabled on mobile
       if (!isMobileGallery) {
@@ -613,19 +642,17 @@
         );
       }
 
-      // Fade-in reveal with scale
-      gsap.from(item, {
-        opacity: 0,
-        y: 30,
-        scale: 0.97,
-        duration: 0.8,
-        ease: "power2.out",
-        scrollTrigger: {
-          trigger: item,
-          start: "top 92%",
-          toggleActions: "play none none reverse",
-        }
-      });
+    });
+
+    // Batched fade-in reveal for all gallery items (single ScrollTrigger)
+    // Only animate opacity + scale — parallax already controls Y transform
+    ScrollTrigger.batch(".gallery-item", {
+      start: "top 92%",
+      onEnter: batch => gsap.from(batch, {
+        opacity: 0, scale: 0.97,
+        duration: 0.8, ease: "power2.out", stagger: 0.1,
+      }),
+      onLeaveBack: batch => gsap.to(batch, { opacity: 0, scale: 0.97, duration: 0.4 }),
     });
 
     // Projects heading parallax reveal
@@ -667,7 +694,7 @@
 
       if (!isMobile) {
         gsap.fromTo(proyectosSection,
-          { clipPath: "inset(8% 12% 8% 12% round 12px)" },
+          { clipPath: "inset(3% 4% 3% 4% round 8px)" },
           {
             clipPath: "inset(0% 0% 0% 0% round 0px)",
             ease: "none",
@@ -733,112 +760,112 @@
   // ============================================================
   const projectData = [
     {
-      name: "Residencia San \u00c1ngel",
+      name: "Residencia San \Ángel",
       category: "Residencial",
       year: "2025",
-      scope: "Dise\u00f1o \u2022 Fabricaci\u00f3n \u2022 Instalaci\u00f3n",
+      scope: "Dise\ño \• Fabricaci\ón \• Instalaci\ón",
       image: "assets/kitchen-wide-2.webp",
-      description: "Una cocina que dialoga con la arquitectura brutalista de esta residencia en San \u00c1ngel. Superficies de cuarzo Calacatta, isla central de 3.2 metros y un sistema de iluminaci\u00f3n integrado que transforma el espacio seg\u00fan la hora del d\u00eda. Cada detalle fue pensado para complementar los techos dobles y los ventanales que enmarcan el jard\u00edn.",
-      gallery: ["assets/detail-marble.jpg", "assets/kitchen-pendant.jpg", "assets/lifestyle-2.jpg", "assets/kitchen-wide-2.webp"]
+      description: "Una cocina que dialoga con la arquitectura brutalista de esta residencia en San \Ángel. Superficies de cuarzo Calacatta, isla central de 3.2 metros y un sistema de iluminaci\ón integrado que transforma el espacio seg\ún la hora del d\ía. Cada detalle fue pensado para complementar los techos dobles y los ventanales que enmarcan el jard\ín.",
+      gallery: ["assets/detail-marble.webp", "assets/kitchen-pendant.webp", "assets/lifestyle-2.webp", "assets/kitchen-wide-2.webp"]
     },
     {
       name: "Loft Condesa",
       category: "Loft",
       year: "2024",
-      scope: "Dise\u00f1o \u2022 Fabricaci\u00f3n",
+      scope: "Dise\ño \• Fabricaci\ón",
       image: "assets/gallery-1.webp",
-      description: "Cocina abierta para un loft de doble altura en la Condesa. El reto: integrar cocina, comedor y sala en un solo gesto arquitect\u00f3nico. Resolvimos con una barra perimetral en roble ahumado y una isla flotante que funciona como punto de reuni\u00f3n. Herrajes Blum de cierre suave en cada caj\u00f3n.",
-      gallery: ["assets/kitchen-dark.jpg", "assets/lifestyle-1.jpg", "assets/kitchen-wide-1.webp", "assets/gallery-2.webp"]
+      description: "Cocina abierta para un loft de doble altura en la Condesa. El reto: integrar cocina, comedor y sala en un solo gesto arquitect\ónico. Resolvimos con una barra perimetral en roble ahumado y una isla flotante que funciona como punto de reuni\ón. Herrajes Blum de cierre suave en cada caj\ón.",
+      gallery: ["assets/kitchen-dark.webp", "assets/lifestyle-1.webp", "assets/kitchen-wide-1.webp", "assets/gallery-2.webp"]
     },
     {
       name: "Casa Pedregal",
       category: "Residencial",
       year: "2024",
-      scope: "Dise\u00f1o \u2022 Fabricaci\u00f3n \u2022 Instalaci\u00f3n",
+      scope: "Dise\ño \• Fabricaci\ón \• Instalaci\ón",
       image: "assets/gallery-2.webp",
-      description: "Minimalismo c\u00e1lido para una familia que vive su cocina. Frentes en laca mate grafito, encimera de Dekton ultracompacto y un sistema de almacenamiento oculto que mantiene todo a la vista limpio y organizado. La isla integra zona de cocci\u00f3n, fregadero y barra de desayuno.",
-      gallery: ["assets/kitchen-portrait-1.webp", "assets/kitchen-portrait-2.webp", "assets/detail-marble.jpg", "assets/kitchen-wide-2.webp"]
+      description: "Minimalismo c\álido para una familia que vive su cocina. Frentes en laca mate grafito, encimera de Dekton ultracompacto y un sistema de almacenamiento oculto que mantiene todo a la vista limpio y organizado. La isla integra zona de cocci\ón, fregadero y barra de desayuno.",
+      gallery: ["assets/kitchen-portrait-1.webp", "assets/kitchen-portrait-2.webp", "assets/detail-marble.webp", "assets/kitchen-wide-2.webp"]
     },
     {
       name: "Departamento Polanco",
       category: "Departamento",
       year: "2025",
-      scope: "Dise\u00f1o \u2022 Fabricaci\u00f3n",
+      scope: "Dise\ño \• Fabricaci\ón",
       image: "assets/gallery-3.webp",
-      description: "Elegancia contenida en 18 metros cuadrados. Para este departamento en Polanco, dise\u00f1amos una cocina en L que maximiza cada cent\u00edmetro. Acabados en madera de nogal con detalles en lat\u00f3n cepillado. El muro de fondo en porcel\u00e1nico simula m\u00e1rmol Statuario sin las complicaciones del mantenimiento.",
-      gallery: ["assets/lifestyle-2.jpg", "assets/kitchen-pendant.jpg", "assets/gallery-1.webp", "assets/kitchen-dark.jpg"]
+      description: "Elegancia contenida en 18 metros cuadrados. Para este departamento en Polanco, dise\ñamos una cocina en L que maximiza cada cent\ímetro. Acabados en madera de nogal con detalles en lat\ón cepillado. El muro de fondo en porcel\ánico simula m\ármol Statuario sin las complicaciones del mantenimiento.",
+      gallery: ["assets/lifestyle-2.webp", "assets/kitchen-pendant.webp", "assets/gallery-1.webp", "assets/kitchen-dark.webp"]
     },
     {
       name: "Residencia Bosques",
       category: "Residencial",
       year: "2023",
-      scope: "Dise\u00f1o \u2022 Fabricaci\u00f3n \u2022 Instalaci\u00f3n",
+      scope: "Dise\ño \• Fabricaci\ón \• Instalaci\ón",
       image: "assets/kitchen-square.webp",
-      description: "Una cocina de autor para una familia que ama cocinar junta. Dos islas paralelas crean un flujo de trabajo profesional en un entorno dom\u00e9stico. Superficies de granito negro Zimbabwe, frentes de roble natural y campana integrada en el techo. El resultado: un espacio que inspira.",
-      gallery: ["assets/kitchen-wide-2.webp", "assets/lifestyle-1.jpg", "assets/kitchen-wide-1.webp", "assets/kitchen-portrait-1.webp"]
+      description: "Una cocina de autor para una familia que ama cocinar junta. Dos islas paralelas crean un flujo de trabajo profesional en un entorno dom\éstico. Superficies de granito negro Zimbabwe, frentes de roble natural y campana integrada en el techo. El resultado: un espacio que inspira.",
+      gallery: ["assets/kitchen-wide-2.webp", "assets/lifestyle-1.webp", "assets/kitchen-wide-1.webp", "assets/kitchen-portrait-1.webp"]
     },
     {
       name: "Interiores Integrales",
       category: "Comercial",
       year: "2024",
-      scope: "Dise\u00f1o \u2022 Fabricaci\u00f3n \u2022 Instalaci\u00f3n",
-      image: "assets/interiors-media.jpg",
-      description: "Proyecto integral para un showroom gastron\u00f3mico en Santa Fe. Tres cocinas de demostraci\u00f3n con especificaciones comerciales: acero inoxidable grado alimenticio, ventilaci\u00f3n industrial y acabados premium que combinan funcionalidad profesional con est\u00e9tica residencial.",
-      gallery: ["assets/kitchen-wide-2.webp", "assets/detail-marble.jpg", "assets/gallery-3.webp", "assets/kitchen-portrait-2.webp"]
+      scope: "Dise\ño \• Fabricaci\ón \• Instalaci\ón",
+      image: "assets/interiors-media.webp",
+      description: "Proyecto integral para un showroom gastron\ómico en Santa Fe. Tres cocinas de demostraci\ón con especificaciones comerciales: acero inoxidable grado alimenticio, ventilaci\ón industrial y acabados premium que combinan funcionalidad profesional con est\ética residencial.",
+      gallery: ["assets/kitchen-wide-2.webp", "assets/detail-marble.webp", "assets/gallery-3.webp", "assets/kitchen-portrait-2.webp"]
     },
     {
       name: "Penthouse Reforma",
       category: "Penthouse",
       year: "2025",
-      scope: "Dise\u00f1o \u2022 Fabricaci\u00f3n \u2022 Instalaci\u00f3n",
-      image: "assets/kitchen-dark.jpg",
-      description: "Cocina oscura de alto contraste para un penthouse en Paseo de la Reforma. Frentes en laca negra mate con tirador integrado, isla en piedra natural y un sistema de iluminaci\u00f3n perimetral que define cada volumen. El dise\u00f1o responde a la vista panor\u00e1mica del espacio.",
-      gallery: ["assets/detail-marble.jpg", "assets/kitchen-pendant.jpg", "assets/gallery-1.webp", "assets/lifestyle-2.jpg"]
+      scope: "Dise\ño \• Fabricaci\ón \• Instalaci\ón",
+      image: "assets/kitchen-dark.webp",
+      description: "Cocina oscura de alto contraste para un penthouse en Paseo de la Reforma. Frentes en laca negra mate con tirador integrado, isla en piedra natural y un sistema de iluminaci\ón perimetral que define cada volumen. El dise\ño responde a la vista panor\ámica del espacio.",
+      gallery: ["assets/detail-marble.webp", "assets/kitchen-pendant.webp", "assets/gallery-1.webp", "assets/lifestyle-2.webp"]
     },
     {
-      name: "Villa Coyoac\u00e1n",
+      name: "Villa Coyoac\án",
       category: "Residencial",
       year: "2024",
-      scope: "Dise\u00f1o \u2022 Fabricaci\u00f3n",
-      image: "assets/kitchen-pendant.jpg",
-      description: "Una cocina que rinde homenaje al contexto hist\u00f3rico de Coyoac\u00e1n. Madera de parota recuperada, encimeras de concreto pulido y detalles artesanales en cer\u00e1mica. La luminaria central de lat\u00f3n fue dise\u00f1ada a medida para este proyecto.",
-      gallery: ["assets/lifestyle-1.jpg", "assets/kitchen-wide-1.webp", "assets/kitchen-wide-2.webp", "assets/gallery-2.webp"]
+      scope: "Dise\ño \• Fabricaci\ón",
+      image: "assets/kitchen-pendant.webp",
+      description: "Una cocina que rinde homenaje al contexto hist\órico de Coyoac\án. Madera de parota recuperada, encimeras de concreto pulido y detalles artesanales en cer\ámica. La luminaria central de lat\ón fue dise\ñada a medida para este proyecto.",
+      gallery: ["assets/lifestyle-1.webp", "assets/kitchen-wide-1.webp", "assets/kitchen-wide-2.webp", "assets/gallery-2.webp"]
     },
     {
       name: "Estudio Narvarte",
       category: "Estudio",
       year: "2024",
-      scope: "Dise\u00f1o \u2022 Fabricaci\u00f3n \u2022 Instalaci\u00f3n",
+      scope: "Dise\ño \• Fabricaci\ón \• Instalaci\ón",
       image: "assets/kitchen-portrait-1.webp",
-      description: "M\u00e1xima funcionalidad en 9 metros cuadrados. Dise\u00f1amos una cocina en U con almacenamiento vertical hasta el techo, frentes en melamina texturizada roble y tiradores ocultos. Cada cent\u00edmetro optimizado sin sacrificar est\u00e9tica.",
-      gallery: ["assets/gallery-3.webp", "assets/kitchen-square.webp", "assets/kitchen-dark.jpg", "assets/kitchen-portrait-2.webp"]
+      description: "M\áxima funcionalidad en 9 metros cuadrados. Dise\ñamos una cocina en U con almacenamiento vertical hasta el techo, frentes en melamina texturizada roble y tiradores ocultos. Cada cent\ímetro optimizado sin sacrificar est\ética.",
+      gallery: ["assets/gallery-3.webp", "assets/kitchen-square.webp", "assets/kitchen-dark.webp", "assets/kitchen-portrait-2.webp"]
     },
     {
       name: "Casa de Campo",
       category: "Residencial",
       year: "2023",
-      scope: "Dise\u00f1o \u2022 Fabricaci\u00f3n \u2022 Instalaci\u00f3n",
-      image: "assets/outdoor-kitchen.jpg",
-      description: "Cocina exterior e interior integradas para una casa de campo en Valle de Bravo. La cocina exterior usa acero corten y piedra volc\u00e1nica, mientras que la interior complementa con madera de tzalam y cuarzo blanco. Ambas conectadas por una barra pasaplatos.",
-      gallery: ["assets/lifestyle-1.jpg", "assets/kitchen-wide-2.webp", "assets/detail-marble.jpg", "assets/interiors-media.jpg"]
+      scope: "Dise\ño \• Fabricaci\ón \• Instalaci\ón",
+      image: "assets/outdoor-kitchen.webp",
+      description: "Cocina exterior e interior integradas para una casa de campo en Valle de Bravo. La cocina exterior usa acero corten y piedra volc\ánica, mientras que la interior complementa con madera de tzalam y cuarzo blanco. Ambas conectadas por una barra pasaplatos.",
+      gallery: ["assets/lifestyle-1.webp", "assets/kitchen-wide-2.webp", "assets/detail-marble.webp", "assets/interiors-media.webp"]
     },
     {
       name: "Suite Santa Fe",
       category: "Departamento",
       year: "2025",
-      scope: "Dise\u00f1o \u2022 Fabricaci\u00f3n",
+      scope: "Dise\ño \• Fabricaci\ón",
       image: "assets/kitchen-portrait-2.webp",
-      description: "Cocina compacta de lujo para un departamento en Santa Fe. Superficies en Silestone blanco, frentes en alto brillo gris perla y una isla multifunci\u00f3n con almacenamiento oculto. Iluminaci\u00f3n LED integrada en cada m\u00f3dulo superior.",
-      gallery: ["assets/gallery-1.webp", "assets/kitchen-pendant.jpg", "assets/kitchen-wide-1.webp", "assets/gallery-3.webp"]
+      description: "Cocina compacta de lujo para un departamento en Santa Fe. Superficies en Silestone blanco, frentes en alto brillo gris perla y una isla multifunci\ón con almacenamiento oculto. Iluminaci\ón LED integrada en cada m\ódulo superior.",
+      gallery: ["assets/gallery-1.webp", "assets/kitchen-pendant.webp", "assets/kitchen-wide-1.webp", "assets/gallery-3.webp"]
     },
     {
       name: "Terraza Lomas",
       category: "Terraza",
       year: "2024",
-      scope: "Dise\u00f1o \u2022 Fabricaci\u00f3n \u2022 Instalaci\u00f3n",
+      scope: "Dise\ño \• Fabricaci\ón \• Instalaci\ón",
       image: "assets/kitchen-wide-1.webp",
-      description: "Proyecto integral de cocina y terraza para una residencia en Lomas de Chapultepec. La cocina principal conecta visualmente con la terraza a trav\u00e9s de un ventanal plegable. Materiales resistentes a la intemperie en la zona exterior, acabados premium en el interior.",
-      gallery: ["assets/outdoor-kitchen.jpg", "assets/kitchen-wide-2.webp", "assets/lifestyle-2.jpg", "assets/kitchen-square.webp"]
+      description: "Proyecto integral de cocina y terraza para una residencia en Lomas de Chapultepec. La cocina principal conecta visualmente con la terraza a trav\és de un ventanal plegable. Materiales resistentes a la intemperie en la zona exterior, acabados premium en el interior.",
+      gallery: ["assets/outdoor-kitchen.webp", "assets/kitchen-wide-2.webp", "assets/lifestyle-2.webp", "assets/kitchen-square.webp"]
     }
   ];
 
@@ -908,7 +935,7 @@
       const boxTitleH2 = document.createElement("h2");
       boxTitleH2.textContent = data.name;
       boxTitleH2.style.cssText = `
-        font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+        font-family: 'Playfair Display', Georgia, serif;
         font-size: clamp(3rem, 7vw, 6.5rem);
         font-weight: 300; color: #1a1917; line-height: 1.0;
         letter-spacing: -0.03em;
@@ -1105,7 +1132,7 @@
       const boxTitleH2 = document.createElement("h2");
       boxTitleH2.textContent = lastOpenedData.name;
       boxTitleH2.style.cssText = `
-        font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+        font-family: 'Playfair Display', Georgia, serif;
         font-size: clamp(3rem, 7vw, 6.5rem);
         font-weight: 300; color: #1a1917; line-height: 1.0;
         letter-spacing: -0.03em;
@@ -1266,12 +1293,12 @@
     if (!indicator || !indicatorText) return;
 
     const sectionDefs = [
-      { sel: "#hero", label: "Proyectos", dir: "down" },
-      { sel: "#manifesto", label: "Proyectos", dir: "down" },
+      { sel: "#hero", label: "Manifiesto", dir: "down" },
+      { sel: "#manifesto", label: "Proceso", dir: "down" },
       { sel: ".section-numeros", label: "Proceso", dir: "down" },
-      { sel: "#proceso", label: "Proyectos", dir: "down" },
-      { sel: ".section-materiales", label: "Proyectos", dir: "down" },
-      { sel: ".section-principio", label: "Proyectos", dir: "down" },
+      { sel: "#proceso", label: "Materiales", dir: "down" },
+      { sel: ".section-materiales", label: "Enfoque", dir: "down" },
+      { sel: ".section-principio", label: "Materiales", dir: "down" },
       { sel: ".section-enfoque", label: "Proyectos", dir: "down" },
       { sel: ".section-detail-break", label: "Proyectos", dir: "down" },
       { sel: "#proyectos", label: "Contacto", dir: "down" },
@@ -1322,9 +1349,7 @@
       end: "bottom bottom",
       onUpdate: onScroll,
     });
-    // Fallback for programmatic scrolls that bypass Lenis/GSAP
-    window.addEventListener("scroll", onScroll, { passive: true });
-    // Also run once on init
+    // Run once on init
     onScroll();
 
     function updateIndicator(s) {
@@ -1499,6 +1524,20 @@
     let mouseX = 0, mouseY = 0;
     let cursorX = 0, cursorY = 0;
     const lerp = 0.08;
+    let cursorTickId = null;
+    let cursorIdleTimer = null;
+
+    function startCursorTick() {
+      if (cursorTickId) return;
+      cursorTickId = requestAnimationFrame(cursorTick);
+    }
+
+    function stopCursorTick() {
+      if (cursorTickId) {
+        cancelAnimationFrame(cursorTickId);
+        cursorTickId = null;
+      }
+    }
 
     document.addEventListener("mousemove", (e) => {
       mouseX = e.clientX;
@@ -1508,19 +1547,22 @@
         cursorX = mouseX;
         cursorY = mouseY;
       }
+      startCursorTick();
+      clearTimeout(cursorIdleTimer);
+      cursorIdleTimer = setTimeout(stopCursorTick, 150);
     });
 
     document.addEventListener("mouseleave", () => {
       cursor.classList.remove("visible");
+      stopCursorTick();
     });
 
-    function tick() {
+    function cursorTick() {
       cursorX += (mouseX - cursorX) * lerp;
       cursorY += (mouseY - cursorY) * lerp;
       cursor.style.transform = `translate(${cursorX}px, ${cursorY}px)`;
-      requestAnimationFrame(tick);
+      cursorTickId = requestAnimationFrame(cursorTick);
     }
-    requestAnimationFrame(tick);
 
     // Hover detection
     const hoverTargets = [
@@ -1571,14 +1613,12 @@
       vid.addEventListener("loadedmetadata", seekAndReveal, { once: true });
     }
 
-    // Use rAF polling for precise boundary control (~16ms vs timeupdate's ~250ms)
-    function checkBounds() {
+    // Use timeupdate event for boundary control (fires ~4x/sec, sufficient for trim)
+    vid.addEventListener("timeupdate", () => {
       if (vid.currentTime >= TRIM_END || vid.currentTime < TRIM_START - 0.5) {
         vid.currentTime = TRIM_START;
       }
-      requestAnimationFrame(checkBounds);
-    }
-    requestAnimationFrame(checkBounds);
+    });
   }
 
   // ============================================================
