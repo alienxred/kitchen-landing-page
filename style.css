@@ -17,9 +17,9 @@ html.lenis, html.lenis body { height: auto; }
   --font-sans: 'Inter', -apple-system, 'Segoe UI', sans-serif;
 
   /* ---- Backgrounds ---- */
-  --bg-cream:       #F2EDE8;
-  --bg-warm-white:  #F8F5F1;
-  --bg-taupe:       #E8E0D6;
+  --bg-cream:       #EDE6DB;
+  --bg-warm-white:  #F2EBE2;
+  --bg-taupe:       #E3DBD0;
   --bg-dark:        #1A1917;
   --bg-dark-warm:   #242220;
 
@@ -1365,6 +1365,210 @@ a { color: inherit; text-decoration: none; }
     text-align: center;
   }
   .footer-links { justify-content: center; }
+}
+
+/* ============================================================
+   CANVAS PROJECT VIEW — Infinite 2D Pan with Parallax
+   ============================================================ */
+
+/* Intro screen (title/metadata before canvas) */
+.canvas-intro {
+  position: absolute; inset: 0; z-index: 5;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center;
+  text-align: center;
+  padding: var(--page-margin);
+  background: var(--bg-cream);
+}
+.canvas-intro.hidden {
+  opacity: 0; pointer-events: none;
+}
+.canvas-intro-title {
+  font-family: var(--font-serif);
+  font-size: clamp(3rem, 7vw, 6.5rem);
+  font-weight: 300; line-height: 1.0;
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+}
+.canvas-intro-meta {
+  display: flex; gap: 2rem; align-items: center;
+  font-family: var(--font-sans);
+  font-size: 0.7rem; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--text-tertiary);
+  margin-bottom: 1.5rem;
+}
+.canvas-intro-desc {
+  font-family: var(--font-sans);
+  font-size: clamp(0.85rem, 1.1vw, 1rem);
+  font-weight: 300; line-height: 1.8;
+  color: var(--text-secondary);
+  max-width: 50ch;
+}
+.canvas-intro-hint {
+  font-family: var(--font-sans);
+  font-size: 0.6rem; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.15em;
+  color: var(--text-tertiary);
+  margin-top: 3rem;
+  animation: hintPulse 2s ease-in-out infinite;
+}
+@keyframes hintPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+/* Canvas viewport — clips the world, handles input */
+.canvas-viewport {
+  position: absolute; inset: 0;
+  overflow: hidden; z-index: 2;
+  cursor: grab;
+  touch-action: none;
+  background: var(--bg-cream);
+  opacity: 0; pointer-events: none;
+}
+.canvas-viewport.active {
+  opacity: 1; pointer-events: auto;
+}
+.canvas-viewport:active { cursor: grabbing; }
+
+/* Canvas world — positioned from center, elements are absolute */
+.canvas-world {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 0; height: 0;
+}
+
+/* Individual canvas elements */
+.canvas-element {
+  position: absolute;
+  border-radius: 3px;
+  overflow: hidden;
+  box-shadow: 0 6px 30px rgba(0,0,0,0.10);
+  transition: box-shadow 0.4s ease;
+  will-change: transform;
+}
+.canvas-element:hover {
+  box-shadow: 0 12px 50px rgba(0,0,0,0.18);
+}
+.canvas-element img {
+  width: 100%; height: auto;
+  display: block; cursor: pointer;
+}
+
+/* Before/After slider */
+.ba-slider {
+  position: relative; overflow: hidden;
+  cursor: default; border-radius: 3px;
+}
+.ba-slider .ba-before,
+.ba-slider .ba-after {
+  width: 100%; display: block;
+}
+.ba-before { position: relative; z-index: 1; }
+.ba-after-wrap {
+  position: absolute; inset: 0; z-index: 2;
+  overflow: hidden;
+}
+.ba-after {
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+.ba-handle {
+  position: absolute; top: 0; bottom: 0;
+  width: 3px; background: rgba(255,255,255,0.9);
+  left: 50%; transform: translateX(-50%);
+  cursor: ew-resize; z-index: 4;
+  box-shadow: 0 0 12px rgba(0,0,0,0.3);
+}
+.ba-handle::after {
+  content: ''; position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 36px; height: 36px;
+  background: #fff; border-radius: 50%;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+}
+.ba-handle::before {
+  content: '\2194'; position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 16px; color: #333;
+  z-index: 5; line-height: 1;
+}
+.ba-label {
+  position: absolute; top: 0.8rem; z-index: 3;
+  font-family: var(--font-sans);
+  font-size: 0.55rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.14em;
+  color: #fff;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.5);
+  padding: 0.25rem 0.55rem;
+  background: rgba(0,0,0,0.3);
+  border-radius: 2px;
+}
+.ba-label-before { left: 0.8rem; }
+.ba-label-after { right: 0.8rem; }
+
+/* Plano element */
+.canvas-plano {
+  position: relative; cursor: pointer;
+}
+.canvas-plano-badge {
+  position: absolute; bottom: 0.8rem; left: 0.8rem;
+  font-family: var(--font-sans);
+  font-size: 0.55rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: #fff; padding: 0.3rem 0.6rem;
+  background: rgba(0,0,0,0.4);
+  border-radius: 2px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+/* Lightbox */
+.lightbox {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.92);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.lightbox.active {
+  opacity: 1; pointer-events: auto;
+}
+.lightbox img {
+  max-width: 90vw; max-height: 85vh;
+  object-fit: contain; border-radius: 2px;
+}
+.lightbox-close {
+  position: absolute; top: 1.5rem; right: 1.5rem;
+  width: 44px; height: 44px;
+  background: rgba(255,255,255,0.12);
+  border: none; border-radius: 50%;
+  color: #fff; font-size: 1.2rem;
+  cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: background 0.3s ease, transform 0.3s ease;
+  z-index: 201;
+}
+.lightbox-close:hover {
+  background: rgba(255,255,255,0.25);
+  transform: scale(1.08);
+}
+.lightbox-download {
+  margin-top: 1rem;
+  font-family: var(--font-sans);
+  font-size: 0.7rem; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: #fff; padding: 0.6rem 1.2rem;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 2px; text-decoration: none;
+  transition: background 0.3s ease;
+}
+.lightbox-download:hover {
+  background: rgba(255,255,255,0.1);
 }
 
 @media (max-width: 640px) {

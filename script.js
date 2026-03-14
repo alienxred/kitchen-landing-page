@@ -873,8 +873,369 @@
       image: "assets/kitchen-wide-1.webp",
       description: "Proyecto integral de cocina y terraza para una residencia en Lomas de Chapultepec. La cocina principal conecta visualmente con la terraza a trav\és de un ventanal plegable. Materiales resistentes a la intemperie en la zona exterior, acabados premium en el interior.",
       gallery: ["assets/outdoor-kitchen.webp", "assets/kitchen-wide-2.webp", "assets/lifestyle-2.webp", "assets/kitchen-square.webp"]
+    },
+    {
+      name: "Family Room Caoba",
+      category: "Family Room",
+      year: "2025",
+      scope: "Diseño • Decorado Virtual",
+      image: "assets/family-room-caoba-principal.webp",
+      description: "Transformación integral de un family room en la zona del Bajío. Tres propuestas de decorado virtual sobre el espacio real, mostrando el potencial de cada ambiente. Materiales cálidos en caoba y texturas naturales que conectan el interior con el entorno.",
+      gallery: [
+        "assets/family-room-caoba-principal.webp",
+        "assets/family-room-caoba-tv.webp",
+        "assets/family-room-caoba-tv2.webp",
+        "assets/family-room-caoba-closeup.webp"
+      ],
+      canvasElements: [
+        { type: "beforeAfter", before: "assets/family-room-caoba-principal-before.webp", after: "assets/family-room-caoba-principal.webp", beforeLabel: "REAL", afterLabel: "DECORADO", x: 420, y: -80, depth: 3, width: 700, rotation: -1.5 },
+        { type: "beforeAfter", before: "assets/family-room-caoba-tv-before.webp", after: "assets/family-room-caoba-tv.webp", beforeLabel: "REAL", afterLabel: "DECORADO", x: -480, y: 320, depth: 2, width: 580, rotation: 2.5 },
+        { type: "beforeAfter", before: "assets/family-room-caoba-tv2-before.webp", after: "assets/family-room-caoba-tv2.webp", beforeLabel: "REAL", afterLabel: "DECORADO", x: 200, y: 700, depth: 4, width: 640, rotation: -0.8 },
+        { type: "image", src: "assets/family-room-caoba-closeup.webp", x: -650, y: -200, depth: 1, width: 420, rotation: 3.5 },
+        { type: "plano", src: "assets/family-room-caoba-plano.pdf", x: 750, y: 550, depth: 1, width: 350, rotation: -2 }
+      ]
     }
   ];
+
+  // Generate canvasElements for projects that don't have them (existing projects)
+  projectData.forEach(p => {
+    if (p.canvasElements) return;
+    const imgs = p.gallery || [];
+    const positions = [
+      { x: -350, y: -180, depth: 2, width: 550, rotation: -2 },
+      { x: 380, y: -60, depth: 3, width: 480, rotation: 1.5 },
+      { x: -200, y: 350, depth: 1, width: 420, rotation: 3 },
+      { x: 450, y: 420, depth: 4, width: 520, rotation: -1 },
+    ];
+    p.canvasElements = imgs.map((src, i) => ({
+      type: "image",
+      src,
+      ...positions[i % positions.length],
+    }));
+  });
+
+  // ============================================================
+  // CANVAS VIEW — Infinite 2D Pan with Parallax Depth
+  // ============================================================
+  const PARALLAX_FACTORS = { 1: 0.4, 2: 0.7, 3: 1.0, 4: 1.4 };
+  const DEPTH_SCALES = { 1: 0.92, 2: 1.0, 3: 1.08, 4: 1.22 };
+  let canvasPanState = null;
+
+  function renderCanvasView(overlay, data) {
+    // Remove existing inner content
+    const oldHero = overlay.querySelector(".project-detail-hero-area");
+    const oldContent = overlay.querySelector(".project-detail-inner");
+    if (oldHero) oldHero.remove();
+    if (oldContent) oldContent.remove();
+
+    // Create intro screen
+    const intro = document.createElement("div");
+    intro.className = "canvas-intro";
+    intro.innerHTML = `
+      <h2 class="canvas-intro-title">${data.name}</h2>
+      <div class="canvas-intro-meta">
+        <span>${data.category} &mdash; ${data.year}</span>
+        <span>${data.scope}</span>
+      </div>
+      <p class="canvas-intro-desc">${data.description}</p>
+      <div class="canvas-intro-hint">Scroll para explorar</div>
+    `;
+
+    // Create canvas viewport
+    const viewport = document.createElement("div");
+    viewport.className = "canvas-viewport";
+    const world = document.createElement("div");
+    world.className = "canvas-world";
+    viewport.appendChild(world);
+
+    overlay.appendChild(intro);
+    overlay.appendChild(viewport);
+
+    // Render canvas elements
+    const elements = renderCanvasElements(world, data.canvasElements || [], data);
+
+    // Transition: first scroll/swipe transitions from intro to canvas
+    let introActive = true;
+    function handleIntroScroll(e) {
+      if (!introActive) return;
+      introActive = false;
+      e.preventDefault();
+      overlay.removeEventListener("wheel", handleIntroScroll);
+      overlay.removeEventListener("touchmove", handleIntroScroll);
+
+      gsap.to(intro, {
+        opacity: 0, y: -60, duration: 0.6, ease: "power2.inOut",
+        onComplete: () => {
+          intro.classList.add("hidden");
+          viewport.classList.add("active");
+          canvasPanState = initCanvasPanning(viewport, world, elements);
+        }
+      });
+    }
+    overlay.addEventListener("wheel", handleIntroScroll, { passive: false });
+    overlay.addEventListener("touchmove", handleIntroScroll, { passive: false });
+  }
+
+  function renderCanvasElements(world, elemConfigs, data) {
+    const elements = [];
+    elemConfigs.forEach((cfg, i) => {
+      const el = document.createElement("div");
+      el.className = "canvas-element";
+      el.dataset.depth = cfg.depth || 2;
+      el._baseX = cfg.x || 0;
+      el._baseY = cfg.y || 0;
+      el._rotation = cfg.rotation || 0;
+      el._depth = cfg.depth || 2;
+      el._scale = DEPTH_SCALES[cfg.depth] || 1;
+
+      const w = cfg.width || 500;
+      el.style.width = w + "px";
+      // Center the element on its position
+      el.style.left = -w / 2 + "px";
+      el.style.top = "0px";
+
+      if (cfg.type === "beforeAfter") {
+        el.innerHTML = `
+          <div class="ba-slider" style="width:${w}px">
+            <img class="ba-before" src="${cfg.before}" alt="Real">
+            <div class="ba-after-wrap">
+              <img class="ba-after" src="${cfg.after}" alt="Decorado">
+            </div>
+            <div class="ba-handle"></div>
+            <span class="ba-label ba-label-before">${cfg.beforeLabel || "REAL"}</span>
+            <span class="ba-label ba-label-after">${cfg.afterLabel || "DECORADO"}</span>
+          </div>
+        `;
+        initBeforeAfterSlider(el.querySelector(".ba-slider"));
+      } else if (cfg.type === "plano") {
+        el.classList.add("canvas-plano");
+        // For PDF, show a placeholder or the first page preview
+        const isPdf = cfg.src && cfg.src.endsWith(".pdf");
+        if (isPdf) {
+          // Create a styled placeholder for the PDF
+          el.innerHTML = `
+            <div style="width:${w}px;height:${Math.round(w * 1.4)}px;background:var(--bg-warm-white);display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid var(--accent-line);">
+              <div style="font-family:var(--font-serif);font-size:2.5rem;color:var(--text-tertiary);margin-bottom:0.5rem;">📐</div>
+              <div style="font-family:var(--font-sans);font-size:0.7rem;font-weight:500;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-secondary);">Plano</div>
+              <div style="font-family:var(--font-sans);font-size:0.55rem;color:var(--text-tertiary);margin-top:0.3rem;">${data.name}</div>
+            </div>
+            <div class="canvas-plano-badge">Ver plano</div>
+          `;
+          el.addEventListener("click", (e) => {
+            e.stopPropagation();
+            window.open(cfg.src, "_blank");
+          });
+        } else {
+          el.innerHTML = `<img src="${cfg.src}" alt="Plano"><div class="canvas-plano-badge">Ver plano</div>`;
+          el.querySelector("img").addEventListener("click", (e) => {
+            e.stopPropagation();
+            openLightbox(cfg.src, "Plano", cfg.pdfSrc);
+          });
+        }
+      } else {
+        // Standard image
+        el.innerHTML = `<img src="${cfg.src}" alt="${data.name}">`;
+        el.querySelector("img").addEventListener("click", (e) => {
+          e.stopPropagation();
+          openLightbox(cfg.src, data.name);
+        });
+      }
+
+      world.appendChild(el);
+      elements.push(el);
+    });
+    return elements;
+  }
+
+  function initCanvasPanning(viewport, world, elements) {
+    let targetX = 0, targetY = 0;
+    let currentX = 0, currentY = 0;
+    let velocityX = 0, velocityY = 0;
+    let isInertia = false;
+    let isDragging = false;
+    let lastPointerX = 0, lastPointerY = 0;
+    let tickerId = null;
+
+    // Compute content bounds for soft clamping
+    let minX = -2000, maxX = 2000, minY = -2000, maxY = 2000;
+    elements.forEach(el => {
+      const x = el._baseX;
+      const y = el._baseY;
+      const f = PARALLAX_FACTORS[el._depth] || 1;
+      minX = Math.min(minX, -x * f - 800);
+      maxX = Math.max(maxX, -x * f + 800);
+      minY = Math.min(minY, -y * f - 800);
+      maxY = Math.max(maxY, -y * f + 800);
+    });
+
+    function softClamp(val, min, max) {
+      const overshoot = 120;
+      if (val < min) return min - (min - val) * 0.15;
+      if (val > max) return max + (val - max) * 0.15;
+      return val;
+    }
+
+    function applyTransforms() {
+      currentX += (targetX - currentX) * 0.09;
+      currentY += (targetY - currentY) * 0.09;
+
+      if (isInertia) {
+        targetX += velocityX;
+        targetY += velocityY;
+        velocityX *= 0.93;
+        velocityY *= 0.93;
+        if (Math.abs(velocityX) + Math.abs(velocityY) < 0.3) {
+          isInertia = false;
+        }
+      }
+
+      // Snap back from overshoot
+      if (!isDragging && !isInertia) {
+        if (targetX < minX) targetX += (minX - targetX) * 0.08;
+        if (targetX > maxX) targetX += (maxX - targetX) * 0.08;
+        if (targetY < minY) targetY += (minY - targetY) * 0.08;
+        if (targetY > maxY) targetY += (maxY - targetY) * 0.08;
+      }
+
+      elements.forEach(el => {
+        const f = PARALLAX_FACTORS[el._depth] || 1;
+        const px = el._baseX + currentX * f;
+        const py = el._baseY + currentY * f;
+        el.style.transform = `translate(${px}px, ${py}px) rotate(${el._rotation}deg) scale(${el._scale})`;
+      });
+    }
+
+    // Initial position
+    elements.forEach(el => {
+      const px = el._baseX;
+      const py = el._baseY;
+      el.style.transform = `translate(${px}px, ${py}px) rotate(${el._rotation}deg) scale(${el._scale})`;
+    });
+
+    // Start animation loop
+    tickerId = gsap.ticker.add(applyTransforms);
+
+    // Wheel handler (trackpad two-finger)
+    function onWheel(e) {
+      e.preventDefault();
+      targetX -= e.deltaX * 0.8;
+      targetY -= e.deltaY * 0.8;
+      targetX = softClamp(targetX, minX, maxX);
+      targetY = softClamp(targetY, minY, maxY);
+      isInertia = false;
+    }
+    viewport.addEventListener("wheel", onWheel, { passive: false });
+
+    // Pointer drag
+    function onPointerDown(e) {
+      if (e.target.closest(".ba-handle") || e.target.closest(".ba-slider")) return;
+      isDragging = true;
+      isInertia = false;
+      lastPointerX = e.clientX;
+      lastPointerY = e.clientY;
+      viewport.setPointerCapture(e.pointerId);
+    }
+    function onPointerMove(e) {
+      if (!isDragging) return;
+      const dx = e.clientX - lastPointerX;
+      const dy = e.clientY - lastPointerY;
+      velocityX = dx * 0.6;
+      velocityY = dy * 0.6;
+      targetX += dx;
+      targetY += dy;
+      targetX = softClamp(targetX, minX, maxX);
+      targetY = softClamp(targetY, minY, maxY);
+      lastPointerX = e.clientX;
+      lastPointerY = e.clientY;
+    }
+    function onPointerUp() {
+      if (!isDragging) return;
+      isDragging = false;
+      if (Math.abs(velocityX) + Math.abs(velocityY) > 1) {
+        isInertia = true;
+      }
+    }
+    viewport.addEventListener("pointerdown", onPointerDown);
+    viewport.addEventListener("pointermove", onPointerMove);
+    viewport.addEventListener("pointerup", onPointerUp);
+    viewport.addEventListener("pointercancel", onPointerUp);
+
+    return {
+      destroy() {
+        if (tickerId !== null) gsap.ticker.remove(applyTransforms);
+        viewport.removeEventListener("wheel", onWheel);
+        viewport.removeEventListener("pointerdown", onPointerDown);
+        viewport.removeEventListener("pointermove", onPointerMove);
+        viewport.removeEventListener("pointerup", onPointerUp);
+        viewport.removeEventListener("pointercancel", onPointerUp);
+      }
+    };
+  }
+
+  // Before/After Slider
+  function initBeforeAfterSlider(container) {
+    const handle = container.querySelector(".ba-handle");
+    const afterWrap = container.querySelector(".ba-after-wrap");
+    if (!handle || !afterWrap) return;
+
+    let dragging = false;
+    afterWrap.style.clipPath = "inset(0 50% 0 0)";
+    handle.style.left = "50%";
+
+    function updateSlider(clientX) {
+      const rect = container.getBoundingClientRect();
+      let pct = ((clientX - rect.left) / rect.width) * 100;
+      pct = Math.max(2, Math.min(98, pct));
+      afterWrap.style.clipPath = `inset(0 ${100 - pct}% 0 0)`;
+      handle.style.left = pct + "%";
+    }
+
+    handle.addEventListener("pointerdown", (e) => {
+      dragging = true;
+      e.stopPropagation();
+      e.preventDefault();
+      handle.setPointerCapture(e.pointerId);
+    });
+    handle.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      e.stopPropagation();
+      updateSlider(e.clientX);
+    });
+    handle.addEventListener("pointerup", (e) => {
+      dragging = false;
+      e.stopPropagation();
+    });
+    handle.addEventListener("pointercancel", () => { dragging = false; });
+  }
+
+  // Lightbox
+  function openLightbox(src, alt, pdfSrc) {
+    const lb = document.createElement("div");
+    lb.className = "lightbox";
+    lb.innerHTML = `
+      <button class="lightbox-close">&times;</button>
+      <img src="${src}" alt="${alt || ''}">
+      ${pdfSrc ? `<a class="lightbox-download" href="${pdfSrc}" target="_blank" rel="noopener">Descargar PDF</a>` : ""}
+    `;
+    document.body.appendChild(lb);
+
+    requestAnimationFrame(() => lb.classList.add("active"));
+
+    function close() {
+      lb.classList.remove("active");
+      setTimeout(() => lb.remove(), 300);
+    }
+    lb.querySelector(".lightbox-close").addEventListener("click", close);
+    lb.addEventListener("click", (e) => {
+      if (e.target === lb) close();
+    });
+    document.addEventListener("keydown", function onEsc(e) {
+      if (e.key === "Escape") {
+        close();
+        document.removeEventListener("keydown", onEsc);
+      }
+    });
+  }
 
   function initProjectOverlay() {
     const overlay = document.getElementById("project-detail");
@@ -935,7 +1296,7 @@
       const boxTitle = document.createElement("div");
       boxTitle.style.cssText = `
         width: 100%; height: 0; flex-shrink: 0;
-        background: #F2EDE8; overflow: hidden;
+        background: #EDE6DB; overflow: hidden;
         display: flex; flex-direction: column; justify-content: flex-end;
         padding: 0 clamp(1.5rem, 5vw, 6rem);
       `;
@@ -995,48 +1356,52 @@
       const nav = document.querySelector('nav, header, .site-nav');
 
       // === 3. Populate the real overlay (hidden, will swap in at end) ===
+      const isCanvasMode = !!(data.canvasElements && data.canvasElements.length);
       overlayInner.innerHTML = "";
-      const heroArea = document.createElement("div");
-      heroArea.className = "project-detail-hero-area";
-      heroArea.innerHTML = `
-        <div class="project-detail-title-area">
-          <h2 class="project-detail-title">${data.name}</h2>
-        </div>
-        <img class="project-detail-hero" src="${data.image}" alt="${data.name}">
-      `;
 
-      const contentArea = document.createElement("div");
-      contentArea.className = "project-detail-inner";
-      contentArea.innerHTML = `
-        <span class="project-detail-label">${data.category} &mdash; ${data.year}</span>
-        <div class="project-detail-meta">
-          <span class="project-detail-meta-item">${data.scope}</span>
-        </div>
-        <div class="project-detail-rule"></div>
-        <p class="project-detail-desc">${data.description}</p>
-        <div class="project-detail-gallery">
-          ${data.gallery.map(src => `<img src="${src}" alt="${data.name}" loading="lazy">`).join("")}
-        </div>
-      `;
+      let contentEls = [];
+      if (!isCanvasMode) {
+        // Legacy scrolling layout
+        const heroArea = document.createElement("div");
+        heroArea.className = "project-detail-hero-area";
+        heroArea.innerHTML = `
+          <div class="project-detail-title-area">
+            <h2 class="project-detail-title">${data.name}</h2>
+          </div>
+          <img class="project-detail-hero" src="${data.image}" alt="${data.name}">
+        `;
 
-      overlay.querySelector(".project-detail-inner").remove();
-      overlay.querySelector(".project-close").insertAdjacentElement("afterend", heroArea);
-      overlay.appendChild(contentArea);
+        const contentArea = document.createElement("div");
+        contentArea.className = "project-detail-inner";
+        contentArea.innerHTML = `
+          <span class="project-detail-label">${data.category} &mdash; ${data.year}</span>
+          <div class="project-detail-meta">
+            <span class="project-detail-meta-item">${data.scope}</span>
+          </div>
+          <div class="project-detail-rule"></div>
+          <p class="project-detail-desc">${data.description}</p>
+          <div class="project-detail-gallery">
+            ${data.gallery.map(src => `<img src="${src}" alt="${data.name}" loading="lazy">`).join("")}
+          </div>
+        `;
 
-      const titleArea = heroArea.querySelector(".project-detail-title-area");
-      const heroImg = heroArea.querySelector(".project-detail-hero");
-      const titleH2 = heroArea.querySelector(".project-detail-title");
-      const contentEls = contentArea.querySelectorAll(".project-detail-label, .project-detail-meta, .project-detail-rule, .project-detail-desc, .project-detail-gallery");
+        overlay.querySelector(".project-detail-inner").remove();
+        overlay.querySelector(".project-close").insertAdjacentElement("afterend", heroArea);
+        overlay.appendChild(contentArea);
 
-      // Set final overlay layout
-      titleArea.style.height = targetTitleH + "px";
-      titleArea.style.overflow = "hidden";
-      heroImg.style.height = targetImgH + "px";
+        const titleArea = heroArea.querySelector(".project-detail-title-area");
+        const heroImg = heroArea.querySelector(".project-detail-hero");
+        const titleH2 = heroArea.querySelector(".project-detail-title");
+        contentEls = contentArea.querySelectorAll(".project-detail-label, .project-detail-meta, .project-detail-rule, .project-detail-desc, .project-detail-gallery");
+
+        titleArea.style.height = targetTitleH + "px";
+        titleArea.style.overflow = "hidden";
+        heroImg.style.height = targetImgH + "px";
+        gsap.set(contentEls, { opacity: 0, y: 24 });
+        gsap.set(titleH2, { y: "0%", opacity: 1 });
+      }
 
       gsap.set(overlay, { opacity: 0, clipPath: "none" });
-      gsap.set(contentEls, { opacity: 0, y: 24 });
-      gsap.set(titleH2, { y: "0%", opacity: 1 });
-
       overlay.classList.add("active");
       overlay.scrollTop = 0;
 
@@ -1078,20 +1443,32 @@
         expandBox.remove();
         scrim.remove();
         card.style.visibility = "";
-        // Reset sibling styles (they're behind the overlay now)
         siblings.forEach(sib => gsap.set(sib, { x: 0, y: 0, opacity: 1, clearProps: "transform,opacity" }));
         if (nav) gsap.set(nav, { clearProps: "all" });
-      }, null, dur + 0.05)
 
-      // Content staggers in
-      .to(contentEls, {
-        opacity: 1, y: 0, duration: 0.5, ease: "power1.out", stagger: 0.05,
-      }, dur + 0.05);
+        // Canvas mode: render the canvas view after animation
+        if (isCanvasMode) {
+          renderCanvasView(overlay, data);
+        }
+      }, null, dur + 0.05);
+
+      // Content staggers in (only for legacy mode)
+      if (!isCanvasMode) {
+        tl.to(contentEls, {
+          opacity: 1, y: 0, duration: 0.5, ease: "power1.out", stagger: 0.05,
+        }, dur + 0.05);
+      }
     }
 
     function closeProject() {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
+
+      // Destroy canvas panning if active
+      if (canvasPanState) {
+        canvasPanState.destroy();
+        canvasPanState = null;
+      }
 
       // Fallback: simple fade if we lost track of the source card
       if (!lastOpenedCard || !lastOpenedData) {
@@ -1109,12 +1486,11 @@
       lastOpenedCard.style.visibility = "hidden";
 
       // === 2. Create shrink box (ONTO-style container: title + image) ===
+      const isCanvas = !!overlay.querySelector(".canvas-viewport");
       const titleArea = overlay.querySelector(".project-detail-title-area");
-      const heroImg = overlay.querySelector(".project-detail-hero");
-      const titleH2 = overlay.querySelector(".project-detail-title");
-      const contentEls = overlay.querySelectorAll(
-        ".project-detail-label, .project-detail-meta, .project-detail-rule, .project-detail-desc, .project-detail-gallery"
-      );
+      const contentEls = isCanvas
+        ? overlay.querySelectorAll(".canvas-intro, .canvas-viewport")
+        : overlay.querySelectorAll(".project-detail-label, .project-detail-meta, .project-detail-rule, .project-detail-desc, .project-detail-gallery");
 
       // Get current title area height
       const currentTitleH = titleArea ? parseFloat(getComputedStyle(titleArea).height) : lastTargetTitleH || Math.round(vh * 0.52);
@@ -1132,7 +1508,7 @@
       const boxTitle = document.createElement("div");
       boxTitle.style.cssText = `
         width: 100%; height: ${currentTitleH}px; flex-shrink: 0;
-        background: #F2EDE8; overflow: hidden;
+        background: #EDE6DB; overflow: hidden;
         display: flex; flex-direction: column; justify-content: flex-end;
         padding: 0 clamp(1.5rem, 5vw, 6rem);
       `;
@@ -1244,11 +1620,15 @@
         overlay.classList.remove("active");
         gsap.set(overlay, { opacity: 0, clipPath: "none" });
 
-        // Rebuild overlay inner DOM
+        // Rebuild overlay inner DOM — remove all content (legacy + canvas)
         const oldHero = overlay.querySelector(".project-detail-hero-area");
         const oldContent = overlay.querySelector(".project-detail-inner");
+        const oldCanvasIntro = overlay.querySelector(".canvas-intro");
+        const oldCanvasViewport = overlay.querySelector(".canvas-viewport");
         if (oldHero) oldHero.remove();
         if (oldContent) oldContent.remove();
+        if (oldCanvasIntro) oldCanvasIntro.remove();
+        if (oldCanvasViewport) oldCanvasViewport.remove();
         const newInner = document.createElement("div");
         newInner.className = "project-detail-inner";
         newInner.id = "project-detail-inner";
