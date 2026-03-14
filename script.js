@@ -645,11 +645,16 @@
     });
 
     // Batched fade-in reveal for all gallery items (single ScrollTrigger)
-    // Only animate opacity + scale — parallax already controls Y transform
+    // Start hidden, animate to visible on enter/re-enter
+    gsap.set(".gallery-item", { opacity: 0, scale: 0.97 });
     ScrollTrigger.batch(".gallery-item", {
       start: "top 92%",
-      onEnter: batch => gsap.from(batch, {
-        opacity: 0, scale: 0.97,
+      onEnter: batch => gsap.to(batch, {
+        opacity: 1, scale: 1,
+        duration: 0.8, ease: "power2.out", stagger: 0.1,
+      }),
+      onEnterBack: batch => gsap.to(batch, {
+        opacity: 1, scale: 1,
         duration: 0.8, ease: "power2.out", stagger: 0.1,
       }),
       onLeaveBack: batch => gsap.to(batch, { opacity: 0, scale: 0.97, duration: 0.4 }),
@@ -658,15 +663,17 @@
     // Projects heading parallax reveal
     const proyectosHeading = document.querySelector(".proyectos-header .heading-display");
     if (proyectosHeading) {
-      gsap.from(proyectosHeading, {
-        y: 60,
-        opacity: 0,
+      gsap.fromTo(proyectosHeading,
+        { y: 60, opacity: 0 },
+        {
+        y: 0,
+        opacity: 1,
         duration: 1.2,
         ease: "power2.out",
         scrollTrigger: {
           trigger: ".proyectos-header",
           start: "top 80%",
-          toggleActions: "play none none reverse",
+          toggleActions: "play none play reverse",
         }
       });
     }
