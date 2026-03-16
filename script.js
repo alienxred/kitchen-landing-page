@@ -1571,6 +1571,8 @@
         padding-bottom: 1.5rem;
         white-space: nowrap;
       `;
+      boxTitleH2.style.opacity = "0";
+      boxTitleH2.style.transform = "translateY(20px)";
       boxTitle.appendChild(boxTitleH2);
 
       // Image inside the box — fills remaining space
@@ -1711,10 +1713,15 @@
         duration: dur, ease: "sine.inOut",
       }, 0)
 
-      // Title area grows INSIDE the box — same easing, text revealed by overflow:hidden
+      // Title area grows INSIDE the box — same easing
       .to(boxTitle, {
         height: targetTitleH, duration: dur * 0.75, ease: "sine.inOut",
       }, dur * 0.15)
+
+      // Title text fades in smoothly after container mostly expanded — no "jump"
+      .to(boxTitleH2, {
+        opacity: 1, y: 0, duration: dur * 0.4, ease: "power2.out",
+      }, dur * 0.55)
 
       // Siblings push outward + fade — unified with expansion
       siblings.forEach((sib, i) => {
@@ -2312,6 +2319,48 @@
   }
 
   // ============================================================
+  // MOBILE CAROUSEL (project gallery → horizontal swipe)
+  // ============================================================
+  function initMobileCarousel() {
+    const grid = document.querySelector(".proyectos-grid");
+    const dotsContainer = document.getElementById("carousel-dots");
+    if (!grid || !dotsContainer) return;
+
+    const items = grid.querySelectorAll(".gallery-item");
+    if (!items.length) return;
+
+    // Create dots
+    dotsContainer.innerHTML = "";
+    items.forEach((_, i) => {
+      const dot = document.createElement("button");
+      dot.className = "carousel-dot" + (i === 0 ? " active" : "");
+      dot.setAttribute("aria-label", `Proyecto ${i + 1}`);
+      dotsContainer.appendChild(dot);
+    });
+
+    const dots = dotsContainer.querySelectorAll(".carousel-dot");
+
+    // Observe which item is most visible
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const idx = Array.from(items).indexOf(entry.target);
+          dots.forEach((d, i) => d.classList.toggle("active", i === idx));
+        }
+      });
+    }, { root: grid, threshold: 0.5 });
+
+    items.forEach(item => observer.observe(item));
+
+    // Dot click → scroll to item
+    dots.forEach((dot, i) => {
+      dot.addEventListener("click", () => {
+        items[i].scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
+      });
+    });
+  }
+
+  // ============================================================
   // BOOT
   // ============================================================
   initLoader();
@@ -2320,6 +2369,7 @@
   initProjectOverlay();
   initCursor();
   initVideo();
+  if (window.innerWidth <= 640) initMobileCarousel();
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initGSAP);
