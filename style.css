@@ -1371,51 +1371,60 @@ a { color: inherit; text-decoration: none; }
    CANVAS PROJECT VIEW — Infinite 2D Pan with Parallax
    ============================================================ */
 
-/* Intro screen (title/metadata before canvas) */
-.canvas-intro {
-  position: absolute; inset: 0; z-index: 5;
-  display: flex; flex-direction: column;
-  justify-content: center; align-items: center;
-  text-align: center;
-  padding: var(--page-margin);
+/* Specs sheet — slides up over hero image */
+.project-specs-sheet {
+  position: relative;
+  z-index: 5;
   background: var(--bg-cream);
+  border-radius: 16px 16px 0 0;
+  margin-top: -3rem;
+  padding: clamp(2.5rem, 5vw, 4rem) var(--page-margin);
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: var(--max-width);
+  margin-left: auto;
+  margin-right: auto;
+  box-shadow: 0 -8px 40px rgba(26,25,23,0.06);
 }
-.canvas-intro.hidden {
-  opacity: 0; pointer-events: none;
-}
-.canvas-intro-title {
-  font-family: var(--font-serif);
-  font-size: clamp(3rem, 7vw, 6.5rem);
-  font-weight: 300; line-height: 1.0;
-  color: var(--text-primary);
-  margin-bottom: 1.5rem;
-}
-.canvas-intro-meta {
-  display: flex; gap: 2rem; align-items: center;
-  font-family: var(--font-sans);
-  font-size: 0.7rem; font-weight: 500;
-  text-transform: uppercase; letter-spacing: 0.12em;
-  color: var(--text-tertiary);
-  margin-bottom: 1.5rem;
-}
-.canvas-intro-desc {
-  font-family: var(--font-sans);
-  font-size: clamp(0.85rem, 1.1vw, 1rem);
-  font-weight: 300; line-height: 1.8;
-  color: var(--text-secondary);
-  max-width: 50ch;
-}
-.canvas-intro-hint {
+
+/* Canvas enter hint (at bottom of specs sheet) */
+.canvas-enter-hint {
   font-family: var(--font-sans);
   font-size: 0.6rem; font-weight: 500;
   text-transform: uppercase; letter-spacing: 0.15em;
   color: var(--text-tertiary);
-  margin-top: 3rem;
+  margin-top: auto;
+  padding-top: 3rem;
+  padding-bottom: 2rem;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 0.5rem;
+  align-self: center;
   animation: hintPulse 2s ease-in-out infinite;
 }
+.canvas-enter-hint::after {
+  content: '';
+  width: 1px; height: 28px;
+  background: var(--text-tertiary);
+  animation: hintSlide 1.5s ease-in-out infinite;
+}
+
+/* Canvas transition sentinel */
+.canvas-sentinel {
+  height: 1px;
+  width: 100%;
+}
+
 @keyframes hintPulse {
   0%, 100% { opacity: 0.4; }
   50% { opacity: 1; }
+}
+@keyframes hintSlide {
+  0% { transform: scaleY(0); transform-origin: top; }
+  50% { transform: scaleY(1); transform-origin: top; }
+  51% { transform-origin: bottom; }
+  100% { transform: scaleY(0); transform-origin: bottom; }
 }
 
 /* Canvas viewport — clips the world, handles input */
@@ -1430,7 +1439,19 @@ a { color: inherit; text-decoration: none; }
 .canvas-viewport.active {
   opacity: 1; pointer-events: auto;
 }
-.canvas-viewport:active { cursor: grabbing; }
+.canvas-viewport.dragging { cursor: grabbing; }
+
+/* Cross/plus grid background */
+.canvas-grid-bg {
+  position: absolute;
+  inset: -200% -200%;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 16v8M16 20h8' stroke='%23C4B5A0' stroke-width='0.6' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-size: 40px 40px;
+  opacity: 0.4;
+  will-change: background-position, background-size;
+}
 
 /* Canvas world — positioned from center, elements are absolute */
 .canvas-world {
@@ -1442,11 +1463,11 @@ a { color: inherit; text-decoration: none; }
 /* Individual canvas elements */
 .canvas-element {
   position: absolute;
-  border-radius: 3px;
+  border-radius: 4px;
   overflow: hidden;
   box-shadow: 0 6px 30px rgba(0,0,0,0.10);
-  transition: box-shadow 0.4s ease;
   will-change: transform;
+  transform-origin: center center;
 }
 .canvas-element:hover {
   box-shadow: 0 12px 50px rgba(0,0,0,0.18);
@@ -1454,6 +1475,14 @@ a { color: inherit; text-decoration: none; }
 .canvas-element img {
   width: 100%; height: auto;
   display: block; cursor: pointer;
+}
+
+/* Zoom-level dependent shadows */
+.canvas-viewport[data-zoom-level="far"] .canvas-element {
+  box-shadow: 0 3px 15px rgba(0,0,0,0.06);
+}
+.canvas-viewport[data-zoom-level="close"] .canvas-element {
+  box-shadow: 0 16px 60px rgba(0,0,0,0.14);
 }
 
 /* Before/After slider */
@@ -1572,6 +1601,11 @@ a { color: inherit; text-decoration: none; }
 }
 
 @media (max-width: 640px) {
+  .canvas-intro-title { font-size: clamp(2rem, 8vw, 3rem); }
+  .canvas-intro-desc { font-size: 0.85rem; }
+  .ba-handle::after { width: 28px; height: 28px; }
+  .ba-label { font-size: 0.5rem; }
+
   .hero-headline {
     font-size: clamp(1.8rem, 7vw, 2.5rem);
   }

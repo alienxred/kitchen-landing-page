@@ -888,11 +888,11 @@
         "assets/family-room-caoba-closeup.webp"
       ],
       canvasElements: [
-        { type: "beforeAfter", before: "assets/family-room-caoba-principal-before.webp", after: "assets/family-room-caoba-principal.webp", beforeLabel: "REAL", afterLabel: "DECORADO", x: 420, y: -80, depth: 3, width: 700, rotation: -1.5 },
-        { type: "beforeAfter", before: "assets/family-room-caoba-tv-before.webp", after: "assets/family-room-caoba-tv.webp", beforeLabel: "REAL", afterLabel: "DECORADO", x: -480, y: 320, depth: 2, width: 580, rotation: 2.5 },
-        { type: "beforeAfter", before: "assets/family-room-caoba-tv2-before.webp", after: "assets/family-room-caoba-tv2.webp", beforeLabel: "REAL", afterLabel: "DECORADO", x: 200, y: 700, depth: 4, width: 640, rotation: -0.8 },
-        { type: "image", src: "assets/family-room-caoba-closeup.webp", x: -650, y: -200, depth: 1, width: 420, rotation: 3.5 },
-        { type: "plano", src: "assets/family-room-caoba-plano.pdf", x: 750, y: 550, depth: 1, width: 350, rotation: -2 }
+        { type: "beforeAfter", before: "assets/family-room-caoba-principal-before.webp", after: "assets/family-room-caoba-principal.webp", beforeLabel: "REAL", afterLabel: "DECORADO", x: 420, y: -80, depth: 3, width: 700 },
+        { type: "beforeAfter", before: "assets/family-room-caoba-tv-before.webp", after: "assets/family-room-caoba-tv.webp", beforeLabel: "REAL", afterLabel: "DECORADO", x: -480, y: 320, depth: 2, width: 580 },
+        { type: "beforeAfter", before: "assets/family-room-caoba-tv2-before.webp", after: "assets/family-room-caoba-tv2.webp", beforeLabel: "REAL", afterLabel: "DECORADO", x: 200, y: 700, depth: 4, width: 640 },
+        { type: "image", src: "assets/family-room-caoba-closeup.webp", x: -650, y: -200, depth: 1, width: 420 },
+        { type: "plano", src: "assets/family-room-caoba-plano.pdf", x: 750, y: 550, depth: 1, width: 350 }
       ]
     }
   ];
@@ -902,10 +902,10 @@
     if (p.canvasElements) return;
     const imgs = p.gallery || [];
     const positions = [
-      { x: -350, y: -180, depth: 2, width: 550, rotation: -2 },
-      { x: 380, y: -60, depth: 3, width: 480, rotation: 1.5 },
-      { x: -200, y: 350, depth: 1, width: 420, rotation: 3 },
-      { x: 450, y: 420, depth: 4, width: 520, rotation: -1 },
+      { x: -350, y: -180, depth: 2, width: 550 },
+      { x: 380, y: -60, depth: 3, width: 480 },
+      { x: -200, y: 350, depth: 1, width: 420 },
+      { x: 450, y: 420, depth: 4, width: 520 },
     ];
     p.canvasElements = imgs.map((src, i) => ({
       type: "image",
@@ -917,63 +917,105 @@
   // ============================================================
   // CANVAS VIEW — Infinite 2D Pan with Parallax Depth
   // ============================================================
-  const PARALLAX_FACTORS = { 1: 0.4, 2: 0.7, 3: 1.0, 4: 1.4 };
-  const DEPTH_SCALES = { 1: 0.92, 2: 1.0, 3: 1.08, 4: 1.22 };
-  let canvasPanState = null;
+  const PARALLAX_FACTORS = { 1: 0.85, 2: 0.92, 3: 1.0, 4: 1.15 };
+  const ZOOM_PARALLAX    = { 1: 0.92, 2: 0.96, 3: 1.0, 4: 1.06 };
+  const DEPTH_SCALES     = { 1: 0.88, 2: 1.0, 3: 1.1, 4: 1.28 };
+  const ZOOM_MIN = 0.25;
+  const ZOOM_MAX = 3.0;
+  const ZOOM_SPEED = 0.0015;
+  let canvasController = null;
+
+  // Scroll sequence: hero → specs sheet → canvas
+  function initCanvasScrollSequence(overlay, data) {
+    const sentinel = overlay.querySelector(".canvas-sentinel");
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          observer.disconnect();
+          transitionToCanvas(overlay, data);
+        }
+      });
+    }, { root: overlay, threshold: 0.1 });
+
+    observer.observe(sentinel);
+  }
+
+  function transitionToCanvas(overlay, data) {
+    const heroArea = overlay.querySelector(".project-detail-hero-area");
+    const specsSheet = overlay.querySelector(".project-specs-sheet");
+    const sentinel = overlay.querySelector(".canvas-sentinel");
+
+    gsap.to([heroArea, specsSheet].filter(Boolean), {
+      opacity: 0, y: -40, duration: 0.6, ease: "power2.inOut",
+      onComplete: () => {
+        if (heroArea) heroArea.remove();
+        if (specsSheet) specsSheet.remove();
+        if (sentinel) sentinel.remove();
+        overlay.style.overflow = "hidden";
+        renderCanvasView(overlay, data);
+      }
+    });
+  }
 
   function renderCanvasView(overlay, data) {
-    // Remove existing inner content
-    const oldHero = overlay.querySelector(".project-detail-hero-area");
-    const oldContent = overlay.querySelector(".project-detail-inner");
-    if (oldHero) oldHero.remove();
-    if (oldContent) oldContent.remove();
-
-    // Create intro screen
-    const intro = document.createElement("div");
-    intro.className = "canvas-intro";
-    intro.innerHTML = `
-      <h2 class="canvas-intro-title">${data.name}</h2>
-      <div class="canvas-intro-meta">
-        <span>${data.category} &mdash; ${data.year}</span>
-        <span>${data.scope}</span>
-      </div>
-      <p class="canvas-intro-desc">${data.description}</p>
-      <div class="canvas-intro-hint">Scroll para explorar</div>
-    `;
-
-    // Create canvas viewport
+    // Create canvas viewport directly (no intro screen — specs sheet replaced it)
     const viewport = document.createElement("div");
-    viewport.className = "canvas-viewport";
+    viewport.className = "canvas-viewport active"; // immediately active
+    const gridBg = document.createElement("div");
+    gridBg.className = "canvas-grid-bg";
+    viewport.appendChild(gridBg);
     const world = document.createElement("div");
     world.className = "canvas-world";
     viewport.appendChild(world);
 
-    overlay.appendChild(intro);
     overlay.appendChild(viewport);
 
     // Render canvas elements
     const elements = renderCanvasElements(world, data.canvasElements || [], data);
 
-    // Transition: first scroll/swipe transitions from intro to canvas
-    let introActive = true;
-    function handleIntroScroll(e) {
-      if (!introActive) return;
-      introActive = false;
-      e.preventDefault();
-      overlay.removeEventListener("wheel", handleIntroScroll);
-      overlay.removeEventListener("touchmove", handleIntroScroll);
+    // Start canvas controller immediately
+    canvasController = initCanvasController(viewport, world, elements);
+  }
 
-      gsap.to(intro, {
-        opacity: 0, y: -60, duration: 0.6, ease: "power2.inOut",
-        onComplete: () => {
-          intro.classList.add("hidden");
-          viewport.classList.add("active");
-          canvasPanState = initCanvasPanning(viewport, world, elements);
-        }
-      });
+  // Lazy-load pdf.js and render first page to a canvas element
+  async function loadPdfFirstPage(url, canvasEl, targetWidth) {
+    try {
+      if (!window.pdfjsLib) {
+        const script = document.createElement("script");
+        script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+        document.head.appendChild(script);
+        await new Promise((resolve, reject) => {
+          script.onload = resolve;
+          script.onerror = reject;
+        });
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      }
+      const pdf = await pdfjsLib.getDocument(url).promise;
+      const page = await pdf.getPage(1);
+      const baseVp = page.getViewport({ scale: 1 });
+      const scale = (targetWidth / baseVp.width) * 2; // 2x for retina
+      const vp = page.getViewport({ scale });
+      canvasEl.width = vp.width;
+      canvasEl.height = vp.height;
+      canvasEl.style.width = targetWidth + "px";
+      canvasEl.style.height = Math.round(targetWidth * (baseVp.height / baseVp.width)) + "px";
+      await page.render({ canvasContext: canvasEl.getContext("2d"), viewport: vp }).promise;
+    } catch (err) {
+      console.warn("PDF render failed, showing placeholder", err);
+      const parent = canvasEl.parentElement;
+      if (parent) {
+        canvasEl.remove();
+        parent.innerHTML = `
+          <div style="width:${targetWidth}px;height:${Math.round(targetWidth * 1.4)}px;background:var(--bg-warm-white);display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid var(--accent-line);">
+            <div style="font-family:var(--font-sans);font-size:0.7rem;font-weight:500;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-secondary);">Plano</div>
+          </div>
+          <div class="canvas-plano-badge">Ver plano</div>
+        `;
+      }
     }
-    overlay.addEventListener("wheel", handleIntroScroll, { passive: false });
-    overlay.addEventListener("touchmove", handleIntroScroll, { passive: false });
   }
 
   function renderCanvasElements(world, elemConfigs, data) {
@@ -984,13 +1026,11 @@
       el.dataset.depth = cfg.depth || 2;
       el._baseX = cfg.x || 0;
       el._baseY = cfg.y || 0;
-      el._rotation = cfg.rotation || 0;
       el._depth = cfg.depth || 2;
-      el._scale = DEPTH_SCALES[cfg.depth] || 1;
 
       const w = cfg.width || 500;
+      el._width = w;
       el.style.width = w + "px";
-      // Center the element on its position
       el.style.left = -w / 2 + "px";
       el.style.top = "0px";
 
@@ -1009,18 +1049,16 @@
         initBeforeAfterSlider(el.querySelector(".ba-slider"));
       } else if (cfg.type === "plano") {
         el.classList.add("canvas-plano");
-        // For PDF, show a placeholder or the first page preview
         const isPdf = cfg.src && cfg.src.endsWith(".pdf");
         if (isPdf) {
-          // Create a styled placeholder for the PDF
-          el.innerHTML = `
-            <div style="width:${w}px;height:${Math.round(w * 1.4)}px;background:var(--bg-warm-white);display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid var(--accent-line);">
-              <div style="font-family:var(--font-serif);font-size:2.5rem;color:var(--text-tertiary);margin-bottom:0.5rem;">📐</div>
-              <div style="font-family:var(--font-sans);font-size:0.7rem;font-weight:500;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-secondary);">Plano</div>
-              <div style="font-family:var(--font-sans);font-size:0.55rem;color:var(--text-tertiary);margin-top:0.3rem;">${data.name}</div>
-            </div>
-            <div class="canvas-plano-badge">Ver plano</div>
-          `;
+          const pdfCanvas = document.createElement("canvas");
+          pdfCanvas.style.cssText = `width:${w}px;height:${Math.round(w * 1.4)}px;display:block;background:var(--bg-warm-white);border:1px solid var(--accent-line);`;
+          el.appendChild(pdfCanvas);
+          const badge = document.createElement("div");
+          badge.className = "canvas-plano-badge";
+          badge.textContent = "Ver plano";
+          el.appendChild(badge);
+          loadPdfFirstPage(cfg.src, pdfCanvas, w);
           el.addEventListener("click", (e) => {
             e.stopPropagation();
             window.open(cfg.src, "_blank");
@@ -1033,7 +1071,6 @@
           });
         }
       } else {
-        // Standard image
         el.innerHTML = `<img src="${cfg.src}" alt="${data.name}">`;
         el.querySelector("img").addEventListener("click", (e) => {
           e.stopPropagation();
@@ -1047,114 +1084,249 @@
     return elements;
   }
 
-  function initCanvasPanning(viewport, world, elements) {
-    let targetX = 0, targetY = 0;
-    let currentX = 0, currentY = 0;
-    let velocityX = 0, velocityY = 0;
-    let isInertia = false;
+  function initCanvasController(viewport, world, elements) {
+    // --- Camera state (target + smoothed current) ---
+    let camX = 0, camY = 0, camZoom = 1;
+    let curX = 0, curY = 0, curZoom = 1;
+
+    // --- Drag state ---
     let isDragging = false;
     let lastPointerX = 0, lastPointerY = 0;
-    let tickerId = null;
+    let velocityX = 0, velocityY = 0;
+    let lastPointerTime = 0;
+    let isInertia = false;
 
-    // Compute content bounds for soft clamping
-    let minX = -2000, maxX = 2000, minY = -2000, maxY = 2000;
-    elements.forEach(el => {
-      const x = el._baseX;
-      const y = el._baseY;
-      const f = PARALLAX_FACTORS[el._depth] || 1;
-      minX = Math.min(minX, -x * f - 800);
-      maxX = Math.max(maxX, -x * f + 800);
-      minY = Math.min(minY, -y * f - 800);
-      maxY = Math.max(maxY, -y * f + 800);
-    });
+    // --- Pinch state (mobile) ---
+    const activeTouches = new Map();
+    let pinchStartDist = 0, pinchStartZoom = 1;
+    let pinchCenterX = 0, pinchCenterY = 0;
 
-    function softClamp(val, min, max) {
-      const overshoot = 120;
-      if (val < min) return min - (min - val) * 0.15;
-      if (val > max) return max + (val - max) * 0.15;
-      return val;
+    // --- Grid bg reference ---
+    const gridEl = viewport.querySelector(".canvas-grid-bg");
+
+    // --- Fit-all: calculate initial zoom to show all elements ---
+    function calculateFitAllZoom() {
+      let minElX = Infinity, maxElX = -Infinity;
+      let minElY = Infinity, maxElY = -Infinity;
+      elements.forEach(el => {
+        const w = el._width || 500;
+        const h = w * 0.67;
+        minElX = Math.min(minElX, el._baseX - w / 2);
+        maxElX = Math.max(maxElX, el._baseX + w / 2);
+        minElY = Math.min(minElY, el._baseY - h / 2);
+        maxElY = Math.max(maxElY, el._baseY + h / 2);
+      });
+      const contentW = maxElX - minElX || 1000;
+      const contentH = maxElY - minElY || 800;
+      const vpRect = viewport.getBoundingClientRect();
+      const pad = 0.82;
+      camZoom = Math.min(
+        (vpRect.width * pad) / contentW,
+        (vpRect.height * pad) / contentH,
+        1.0
+      );
+      curZoom = camZoom;
+      camX = -(minElX + maxElX) / 2;
+      camY = -(minElY + maxElY) / 2;
+      curX = camX;
+      curY = camY;
+    }
+    calculateFitAllZoom();
+
+    // --- Clamp helper ---
+    function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+    // --- Update zoom-level data attribute for CSS shadow tiers ---
+    function updateZoomLevel() {
+      const level = curZoom < 0.5 ? "far" : curZoom > 1.5 ? "close" : "mid";
+      if (viewport.dataset.zoomLevel !== level) viewport.dataset.zoomLevel = level;
     }
 
+    // --- Per-frame transform application ---
     function applyTransforms() {
-      currentX += (targetX - currentX) * 0.09;
-      currentY += (targetY - currentY) * 0.09;
+      elements.forEach(el => {
+        const d = el._depth;
+        const pf = PARALLAX_FACTORS[d] || 1;
+        const zf = ZOOM_PARALLAX[d] || 1;
+        const effectiveZoom = Math.pow(curZoom, zf);
+        const px = (el._baseX + curX * pf) * curZoom;
+        const py = (el._baseY + curY * pf) * curZoom;
+        const scale = DEPTH_SCALES[d] * effectiveZoom;
+        el.style.transform = `translate(${px}px, ${py}px) scale(${scale})`;
+      });
+      // Grid background parallax (slowest layer)
+      if (gridEl) {
+        const bgZoom = Math.pow(curZoom, 0.5);
+        const bgSize = 40 * bgZoom;
+        gridEl.style.backgroundSize = `${bgSize}px ${bgSize}px`;
+        gridEl.style.backgroundPosition = `${curX * 0.2 * curZoom}px ${curY * 0.2 * curZoom}px`;
+      }
+      updateZoomLevel();
+    }
 
+    // --- rAF animation loop ---
+    let rafId = null;
+    function tick() {
+      // Smooth interpolation
+      curX += (camX - curX) * 0.12;
+      curY += (camY - curY) * 0.12;
+      curZoom += (camZoom - curZoom) * 0.1;
+
+      // Inertia decay
       if (isInertia) {
-        targetX += velocityX;
-        targetY += velocityY;
-        velocityX *= 0.93;
-        velocityY *= 0.93;
-        if (Math.abs(velocityX) + Math.abs(velocityY) < 0.3) {
+        camX += velocityX;
+        camY += velocityY;
+        velocityX *= 0.92;
+        velocityY *= 0.92;
+        if (Math.abs(velocityX) + Math.abs(velocityY) < 0.2) {
           isInertia = false;
         }
       }
 
-      // Snap back from overshoot
-      if (!isDragging && !isInertia) {
-        if (targetX < minX) targetX += (minX - targetX) * 0.08;
-        if (targetX > maxX) targetX += (maxX - targetX) * 0.08;
-        if (targetY < minY) targetY += (minY - targetY) * 0.08;
-        if (targetY > maxY) targetY += (maxY - targetY) * 0.08;
-      }
-
-      elements.forEach(el => {
-        const f = PARALLAX_FACTORS[el._depth] || 1;
-        const px = el._baseX + currentX * f;
-        const py = el._baseY + currentY * f;
-        el.style.transform = `translate(${px}px, ${py}px) rotate(${el._rotation}deg) scale(${el._scale})`;
-      });
+      applyTransforms();
+      rafId = requestAnimationFrame(tick);
     }
 
-    // Initial position
-    elements.forEach(el => {
-      const px = el._baseX;
-      const py = el._baseY;
-      el.style.transform = `translate(${px}px, ${py}px) rotate(${el._rotation}deg) scale(${el._scale})`;
-    });
+    // Initial render + start loop
+    applyTransforms();
+    rafId = requestAnimationFrame(tick);
 
-    // Start animation loop
-    tickerId = gsap.ticker.add(applyTransforms);
-
-    // Wheel handler (trackpad two-finger)
+    // --- ZOOM: scroll wheel centered on cursor ---
     function onWheel(e) {
       e.preventDefault();
-      targetX -= e.deltaX * 0.8;
-      targetY -= e.deltaY * 0.8;
-      targetX = softClamp(targetX, minX, maxX);
-      targetY = softClamp(targetY, minY, maxY);
+      // Skip if slider is active
+      if (viewport.classList.contains("slider-active")) return;
+
+      // Detect trackpad pan vs wheel zoom
+      const isTrackpadPan = !e.ctrlKey &&
+        Math.abs(e.deltaX) > Math.abs(e.deltaY) * 0.5 &&
+        Math.abs(e.deltaX) > 2;
+
+      if (e.ctrlKey || !isTrackpadPan) {
+        // ZOOM centered on cursor
+        const rect = viewport.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left - rect.width / 2;
+        const mouseY = e.clientY - rect.top - rect.height / 2;
+
+        const delta = -e.deltaY * ZOOM_SPEED;
+        const newZoom = clamp(camZoom * (1 + delta), ZOOM_MIN, ZOOM_MAX);
+        const zoomRatio = newZoom / camZoom;
+
+        // Adjust camera so point under cursor stays fixed
+        camX -= mouseX * (1 - 1 / zoomRatio) / camZoom;
+        camY -= mouseY * (1 - 1 / zoomRatio) / camZoom;
+        camZoom = newZoom;
+      } else {
+        // TRACKPAD PAN: two-finger gesture
+        camX -= e.deltaX * 0.8 / camZoom;
+        camY -= e.deltaY * 0.8 / camZoom;
+      }
+
       isInertia = false;
     }
     viewport.addEventListener("wheel", onWheel, { passive: false });
 
-    // Pointer drag
+    // --- PAN: pointer drag ---
     function onPointerDown(e) {
       if (e.target.closest(".ba-handle") || e.target.closest(".ba-slider")) return;
+
+      if (e.pointerType === "touch") {
+        activeTouches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (activeTouches.size === 2) {
+          startPinch();
+          return;
+        }
+      }
+
       isDragging = true;
       isInertia = false;
       lastPointerX = e.clientX;
       lastPointerY = e.clientY;
+      lastPointerTime = performance.now();
       viewport.setPointerCapture(e.pointerId);
+      viewport.classList.add("dragging");
     }
+
     function onPointerMove(e) {
+      if (e.pointerType === "touch") {
+        activeTouches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (activeTouches.size === 2) {
+          updatePinch();
+          return;
+        }
+      }
+
       if (!isDragging) return;
       const dx = e.clientX - lastPointerX;
       const dy = e.clientY - lastPointerY;
-      velocityX = dx * 0.6;
-      velocityY = dy * 0.6;
-      targetX += dx;
-      targetY += dy;
-      targetX = softClamp(targetX, minX, maxX);
-      targetY = softClamp(targetY, minY, maxY);
+      const now = performance.now();
+      const dt = now - lastPointerTime;
+
+      camX += dx / camZoom;
+      camY += dy / camZoom;
+
+      // Track velocity for inertia
+      if (dt > 0) {
+        velocityX = (dx / camZoom) * 0.5;
+        velocityY = (dy / camZoom) * 0.5;
+      }
+
       lastPointerX = e.clientX;
       lastPointerY = e.clientY;
+      lastPointerTime = now;
     }
-    function onPointerUp() {
+
+    function onPointerUp(e) {
+      if (e.pointerType === "touch") {
+        activeTouches.delete(e.pointerId);
+        if (activeTouches.size < 2) pinchStartDist = 0;
+      }
       if (!isDragging) return;
       isDragging = false;
-      if (Math.abs(velocityX) + Math.abs(velocityY) > 1) {
+      viewport.classList.remove("dragging");
+      if (Math.abs(velocityX) + Math.abs(velocityY) > 0.5) {
         isInertia = true;
       }
     }
+
+    // --- PINCH ZOOM (mobile) ---
+    function getTouchDist() {
+      const pts = Array.from(activeTouches.values());
+      if (pts.length < 2) return 0;
+      const dx = pts[1].x - pts[0].x;
+      const dy = pts[1].y - pts[0].y;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+    function getTouchCenter() {
+      const pts = Array.from(activeTouches.values());
+      if (pts.length < 2) return { x: 0, y: 0 };
+      return { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+    }
+
+    function startPinch() {
+      isDragging = false;
+      pinchStartDist = getTouchDist();
+      pinchStartZoom = camZoom;
+      const center = getTouchCenter();
+      const rect = viewport.getBoundingClientRect();
+      pinchCenterX = center.x - rect.left - rect.width / 2;
+      pinchCenterY = center.y - rect.top - rect.height / 2;
+    }
+
+    function updatePinch() {
+      if (pinchStartDist === 0) return;
+      const dist = getTouchDist();
+      const ratio = dist / pinchStartDist;
+      const newZoom = clamp(pinchStartZoom * ratio, ZOOM_MIN, ZOOM_MAX);
+      const zoomRatio = newZoom / camZoom;
+
+      // Pan to keep pinch center fixed
+      camX -= pinchCenterX * (1 - 1 / zoomRatio) / camZoom;
+      camY -= pinchCenterY * (1 - 1 / zoomRatio) / camZoom;
+      camZoom = newZoom;
+    }
+
+    // --- Event binding ---
     viewport.addEventListener("pointerdown", onPointerDown);
     viewport.addEventListener("pointermove", onPointerMove);
     viewport.addEventListener("pointerup", onPointerUp);
@@ -1162,7 +1334,7 @@
 
     return {
       destroy() {
-        if (tickerId !== null) gsap.ticker.remove(applyTransforms);
+        if (rafId) cancelAnimationFrame(rafId);
         viewport.removeEventListener("wheel", onWheel);
         viewport.removeEventListener("pointerdown", onPointerDown);
         viewport.removeEventListener("pointermove", onPointerMove);
@@ -1195,6 +1367,9 @@
       e.stopPropagation();
       e.preventDefault();
       handle.setPointerCapture(e.pointerId);
+      // Signal canvas controller to ignore zoom while slider active
+      const vp = container.closest(".canvas-viewport");
+      if (vp) vp.classList.add("slider-active");
     });
     handle.addEventListener("pointermove", (e) => {
       if (!dragging) return;
@@ -1204,8 +1379,14 @@
     handle.addEventListener("pointerup", (e) => {
       dragging = false;
       e.stopPropagation();
+      const vp = container.closest(".canvas-viewport");
+      if (vp) vp.classList.remove("slider-active");
     });
-    handle.addEventListener("pointercancel", () => { dragging = false; });
+    handle.addEventListener("pointercancel", () => {
+      dragging = false;
+      const vp = container.closest(".canvas-viewport");
+      if (vp) vp.classList.remove("slider-active");
+    });
   }
 
   // Lightbox
@@ -1359,18 +1540,50 @@
       const isCanvasMode = !!(data.canvasElements && data.canvasElements.length);
       overlayInner.innerHTML = "";
 
-      let contentEls = [];
-      if (!isCanvasMode) {
-        // Legacy scrolling layout
-        const heroArea = document.createElement("div");
-        heroArea.className = "project-detail-hero-area";
-        heroArea.innerHTML = `
-          <div class="project-detail-title-area">
-            <h2 class="project-detail-title">${data.name}</h2>
-          </div>
-          <img class="project-detail-hero" src="${data.image}" alt="${data.name}">
-        `;
+      // ALL projects get hero area (title + image) — seamless match with expandBox
+      const heroArea = document.createElement("div");
+      heroArea.className = "project-detail-hero-area";
+      heroArea.innerHTML = `
+        <div class="project-detail-title-area">
+          <h2 class="project-detail-title">${data.name}</h2>
+        </div>
+        <img class="project-detail-hero" src="${data.image}" alt="${data.name}">
+      `;
 
+      let contentEls = [];
+
+      if (isCanvasMode) {
+        // Canvas mode: hero + specs sheet + sentinel → then canvas
+        const specsSheet = document.createElement("div");
+        specsSheet.className = "project-specs-sheet";
+        specsSheet.innerHTML = `
+          <span class="project-detail-label">${data.category} &mdash; ${data.year}</span>
+          <div class="project-detail-meta">
+            <span class="project-detail-meta-item">${data.scope}</span>
+          </div>
+          <div class="project-detail-rule"></div>
+          <p class="project-detail-desc">${data.description}</p>
+          <div class="canvas-enter-hint">Scroll para explorar</div>
+        `;
+        const sentinel = document.createElement("div");
+        sentinel.className = "canvas-sentinel";
+
+        overlay.querySelector(".project-detail-inner").remove();
+        overlay.querySelector(".project-close").insertAdjacentElement("afterend", heroArea);
+        overlay.appendChild(specsSheet);
+        overlay.appendChild(sentinel);
+
+        const titleArea = heroArea.querySelector(".project-detail-title-area");
+        const heroImg = heroArea.querySelector(".project-detail-hero");
+
+        titleArea.style.height = targetTitleH + "px";
+        titleArea.style.overflow = "hidden";
+        heroImg.style.height = targetImgH + "px";
+
+        contentEls = specsSheet.querySelectorAll(".project-detail-label, .project-detail-meta, .project-detail-rule, .project-detail-desc, .canvas-enter-hint");
+        gsap.set(contentEls, { opacity: 0, y: 24 });
+      } else {
+        // Legacy scrolling layout
         const contentArea = document.createElement("div");
         contentArea.className = "project-detail-inner";
         contentArea.innerHTML = `
@@ -1446,18 +1659,16 @@
         siblings.forEach(sib => gsap.set(sib, { x: 0, y: 0, opacity: 1, clearProps: "transform,opacity" }));
         if (nav) gsap.set(nav, { clearProps: "all" });
 
-        // Canvas mode: render the canvas view after animation
+        // Canvas mode: set up the scroll sequence (hero → specs → canvas)
         if (isCanvasMode) {
-          renderCanvasView(overlay, data);
+          initCanvasScrollSequence(overlay, data);
         }
       }, null, dur + 0.05);
 
-      // Content staggers in (only for legacy mode)
-      if (!isCanvasMode) {
-        tl.to(contentEls, {
-          opacity: 1, y: 0, duration: 0.5, ease: "power1.out", stagger: 0.05,
-        }, dur + 0.05);
-      }
+      // Content staggers in (both modes have content to reveal)
+      tl.to(contentEls, {
+        opacity: 1, y: 0, duration: 0.5, ease: "power1.out", stagger: 0.05,
+      }, dur + 0.05);
     }
 
     function closeProject() {
@@ -1465,9 +1676,9 @@
       const vh = window.innerHeight;
 
       // Destroy canvas panning if active
-      if (canvasPanState) {
-        canvasPanState.destroy();
-        canvasPanState = null;
+      if (canvasController) {
+        canvasController.destroy();
+        canvasController = null;
       }
 
       // Fallback: simple fade if we lost track of the source card
@@ -1486,10 +1697,10 @@
       lastOpenedCard.style.visibility = "hidden";
 
       // === 2. Create shrink box (ONTO-style container: title + image) ===
-      const isCanvas = !!overlay.querySelector(".canvas-viewport");
+      const isCanvas = !!overlay.querySelector(".canvas-viewport") || !!overlay.querySelector(".project-specs-sheet");
       const titleArea = overlay.querySelector(".project-detail-title-area");
       const contentEls = isCanvas
-        ? overlay.querySelectorAll(".canvas-intro, .canvas-viewport")
+        ? overlay.querySelectorAll(".canvas-viewport, .project-specs-sheet, .canvas-sentinel")
         : overlay.querySelectorAll(".project-detail-label, .project-detail-meta, .project-detail-rule, .project-detail-desc, .project-detail-gallery");
 
       // Get current title area height
@@ -1623,12 +1834,15 @@
         // Rebuild overlay inner DOM — remove all content (legacy + canvas)
         const oldHero = overlay.querySelector(".project-detail-hero-area");
         const oldContent = overlay.querySelector(".project-detail-inner");
-        const oldCanvasIntro = overlay.querySelector(".canvas-intro");
         const oldCanvasViewport = overlay.querySelector(".canvas-viewport");
+        const oldSpecsSheet = overlay.querySelector(".project-specs-sheet");
+        const oldSentinel = overlay.querySelector(".canvas-sentinel");
         if (oldHero) oldHero.remove();
         if (oldContent) oldContent.remove();
-        if (oldCanvasIntro) oldCanvasIntro.remove();
         if (oldCanvasViewport) oldCanvasViewport.remove();
+        if (oldSpecsSheet) oldSpecsSheet.remove();
+        if (oldSentinel) oldSentinel.remove();
+        overlay.style.overflow = ""; // restore scrollability
         const newInner = document.createElement("div");
         newInner.className = "project-detail-inner";
         newInner.id = "project-detail-inner";
