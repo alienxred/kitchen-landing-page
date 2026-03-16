@@ -321,6 +321,7 @@
   // VIDEO MOMENTS: FADE + DRIFT
   // ============================================================
   function updateMoments(progress) {
+    let anyVisible = false;
     moments.forEach(el => {
       const start = parseFloat(el.dataset.start);
       const end = parseFloat(el.dataset.end);
@@ -340,9 +341,16 @@
         }
       }
 
+      if (opacity > 0.1) anyVisible = true;
       el.style.opacity = Math.max(0, Math.min(1, opacity));
       el.style.transform = `translateY(${drift}px)`;
     });
+
+    // Show/hide mobile scroll hint when no step text visible
+    const scrollHint = document.getElementById("scroll-hint-mobile");
+    if (scrollHint) {
+      scrollHint.classList.toggle("visible", !anyVisible && progress > 0.01 && progress < 0.99);
+    }
   }
 
   // ============================================================
@@ -1069,14 +1077,14 @@
           });
         } else {
           el.innerHTML = `<img src="${cfg.src}" alt="Plano"><div class="canvas-plano-badge">Ver plano</div>`;
-          el.querySelector("img").addEventListener("click", (e) => {
+          el.addEventListener("click", (e) => {
             e.stopPropagation();
             openLightbox(cfg.src, "Plano", cfg.pdfSrc);
           });
         }
       } else {
         el.innerHTML = `<img src="${cfg.src}" alt="${data.name}">`;
-        el.querySelector("img").addEventListener("click", (e) => {
+        el.addEventListener("click", (e) => {
           e.stopPropagation();
           openLightbox(cfg.src, data.name);
         });
@@ -1095,6 +1103,7 @@
 
     // --- Drag state ---
     let isDragging = false;
+    let dragStartX = 0, dragStartY = 0;
     let lastPointerX = 0, lastPointerY = 0;
     let velocityX = 0, velocityY = 0;
     let lastPointerTime = 0;
@@ -1259,10 +1268,13 @@
 
       isDragging = true;
       isInertia = false;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
       lastPointerX = e.clientX;
       lastPointerY = e.clientY;
       lastPointerTime = performance.now();
-      viewport.setPointerCapture(e.pointerId);
+      // Only capture pointer on mouse — touch capture breaks pinch zoom
+      if (e.pointerType !== "touch") viewport.setPointerCapture(e.pointerId);
       viewport.classList.add("dragging");
     }
 
@@ -1553,13 +1565,12 @@
         flex-direction: column;
       `;
 
-      // White title area inside the box — starts at 0 height
+      // White title area inside the box — starts at 0 height, reveals text via clip
       const boxTitle = document.createElement("div");
       boxTitle.style.cssText = `
         width: 100%; height: 0; flex-shrink: 0;
         background: #EDE6DB; overflow: hidden;
-        display: flex; flex-direction: column; justify-content: flex-end;
-        padding: 0 clamp(1.5rem, 5vw, 6rem);
+        position: relative;
       `;
       const boxTitleH2 = document.createElement("h2");
       boxTitleH2.textContent = data.name;
@@ -1568,11 +1579,13 @@
         font-size: clamp(3rem, 7vw, 6.5rem);
         font-weight: 300; color: #1a1917; line-height: 1.0;
         letter-spacing: -0.03em;
-        padding-bottom: 1.5rem;
         white-space: nowrap;
+        position: absolute;
+        bottom: 1.5rem;
+        left: clamp(1.5rem, 5vw, 6rem);
+        right: clamp(1.5rem, 5vw, 6rem);
+        opacity: 0;
       `;
-      boxTitleH2.style.opacity = "0";
-      boxTitleH2.style.transform = "translateY(20px)";
       boxTitle.appendChild(boxTitleH2);
 
       // Image inside the box — fills remaining space
@@ -1718,10 +1731,10 @@
         height: targetTitleH, duration: dur * 0.75, ease: "sine.inOut",
       }, dur * 0.15)
 
-      // Title text fades in smoothly after container mostly expanded — no "jump"
+      // Title text fades in — absolute positioned, no movement, pure reveal
       .to(boxTitleH2, {
-        opacity: 1, y: 0, duration: dur * 0.4, ease: "power2.out",
-      }, dur * 0.55)
+        opacity: 1, duration: dur * 0.35, ease: "power1.out",
+      }, dur * 0.5)
 
       // Siblings push outward + fade — unified with expansion
       siblings.forEach((sib, i) => {
