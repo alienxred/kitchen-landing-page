@@ -972,6 +972,10 @@
 
     overlay.appendChild(viewport);
 
+    // Show back button
+    const backBtn = document.getElementById("project-back");
+    if (backBtn) backBtn.classList.add("visible");
+
     // Render canvas elements
     const elements = renderCanvasElements(world, data.canvasElements || [], data);
 
@@ -1132,6 +1136,21 @@
       curY = camY;
     }
     calculateFitAllZoom();
+
+    // --- Cinematic zoom entrance: start zoomed in on hero, pull back to fit-all ---
+    const fitX = camX, fitY = camY, fitZoom = camZoom;
+    const mainEl = elements.find(el => el._depth === 3) || elements[0];
+    if (mainEl) {
+      camX = -mainEl._baseX;
+      camY = -mainEl._baseY;
+      camZoom = 1.2;
+      curX = camX; curY = camY; curZoom = camZoom;
+    }
+    setTimeout(() => {
+      camX = fitX;
+      camY = fitY;
+      camZoom = fitZoom;
+    }, 200);
 
     // --- Clamp helper ---
     function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
@@ -1422,12 +1441,73 @@
     const overlay = document.getElementById("project-detail");
     const overlayInner = document.getElementById("project-detail-inner");
     const closeBtn = document.getElementById("project-close");
+    const backBtn = document.getElementById("project-back");
     if (!overlay || !overlayInner) return;
 
     // State for reverse close animation
     let lastOpenedCard = null;
     let lastOpenedData = null;
     let lastTargetTitleH = null;
+
+    // Back button: return from canvas to hero+specs
+    if (backBtn) {
+      backBtn.addEventListener("click", () => {
+        if (!lastOpenedData) return;
+        // Destroy canvas controller
+        if (canvasController) { canvasController.destroy(); canvasController = null; }
+        // Remove canvas viewport
+        const vp = overlay.querySelector(".canvas-viewport");
+        if (vp) vp.remove();
+        // Hide back button
+        backBtn.classList.remove("visible");
+        // Restore overlay scrollability
+        overlay.style.overflow = "";
+        // Rebuild hero + specs sheet
+        rebuildHeroAndSpecs(overlay, lastOpenedData);
+      });
+    }
+
+    function rebuildHeroAndSpecs(overlay, data) {
+      const vh = window.innerHeight;
+      const targetTitleH = Math.round(vh * 0.52);
+      const targetImgH = vh - targetTitleH;
+
+      const heroArea = document.createElement("div");
+      heroArea.className = "project-detail-hero-area";
+      heroArea.innerHTML = `
+        <div class="project-detail-title-area" style="height:${targetTitleH}px;overflow:hidden">
+          <h2 class="project-detail-title">${data.name}</h2>
+        </div>
+        <img class="project-detail-hero" src="${data.image}" alt="${data.name}" style="height:${targetImgH}px">
+      `;
+
+      const specsSheet = document.createElement("div");
+      specsSheet.className = "project-specs-sheet";
+      specsSheet.innerHTML = `
+        <span class="project-detail-label">${data.category} &mdash; ${data.year}</span>
+        <div class="project-detail-meta"><span class="project-detail-meta-item">${data.scope}</span></div>
+        <div class="project-detail-rule"></div>
+        <p class="project-detail-desc">${data.description}</p>
+        <div class="canvas-enter-hint">Scroll para explorar</div>
+      `;
+
+      const sentinel = document.createElement("div");
+      sentinel.className = "canvas-sentinel";
+
+      const closeBtnEl = overlay.querySelector(".project-close");
+      closeBtnEl.insertAdjacentElement("afterend", heroArea);
+      overlay.appendChild(specsSheet);
+      overlay.appendChild(sentinel);
+
+      // Fade in
+      gsap.from([heroArea, specsSheet], { opacity: 0, y: 30, duration: 0.5, ease: "power2.out", stagger: 0.1 });
+
+      // Scroll to top
+      overlay.scrollTop = 0;
+
+      // Re-init scroll sequence
+      initCanvasScrollSequence(overlay, data);
+    }
 
     // Click handlers on gallery items
     document.querySelectorAll(".gallery-item[data-project]").forEach(item => {
@@ -1659,8 +1739,13 @@
         siblings.forEach(sib => gsap.set(sib, { x: 0, y: 0, opacity: 1, clearProps: "transform,opacity" }));
         if (nav) gsap.set(nav, { clearProps: "all" });
 
-        // Canvas mode: set up the scroll sequence (hero → specs → canvas)
+        // Canvas mode: animate specs sheet sliding up + set up scroll sequence
         if (isCanvasMode) {
+          const specsSheet = overlay.querySelector(".project-specs-sheet");
+          if (specsSheet) {
+            gsap.set(specsSheet, { y: 120, opacity: 0 });
+            gsap.to(specsSheet, { y: 0, opacity: 1, duration: 0.7, ease: "power3.out", delay: 0.15 });
+          }
           initCanvasScrollSequence(overlay, data);
         }
       }, null, dur + 0.05);
@@ -1830,6 +1915,10 @@
         // Reset overlay
         overlay.classList.remove("active");
         gsap.set(overlay, { opacity: 0, clipPath: "none" });
+
+        // Hide back button
+        const backBtn = document.getElementById("project-back");
+        if (backBtn) backBtn.classList.remove("visible");
 
         // Rebuild overlay inner DOM — remove all content (legacy + canvas)
         const oldHero = overlay.querySelector(".project-detail-hero-area");
