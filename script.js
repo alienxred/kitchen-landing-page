@@ -488,7 +488,7 @@
 
     gsap.registerPlugin(ScrollTrigger);
     initLenis();
-    initSectionIndicator();
+    initFloatingCTA();
 
     // Hero video parallax (scale on scroll)
     const heroVidBg = document.querySelector(".hero-video-bg");
@@ -1993,64 +1993,40 @@
   }
 
   // ============================================================
-  // SECTION INDICATOR — Centered pill (ONTO-style)
+  // FLOATING CTA PILL — Replaces section indicator
   // ============================================================
-  function initSectionIndicator() {
+  function initFloatingCTA() {
     if (typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") return;
 
-    const indicator = document.getElementById("section-indicator");
-    const indicatorText = document.getElementById("indicator-text");
-    if (!indicator || !indicatorText) return;
+    const pill = document.getElementById("floating-cta");
+    if (!pill) return;
 
-    const sectionDefs = [
-      { sel: "#hero", label: "Manifiesto", dir: "down" },
-      { sel: "#manifesto", label: "Proceso", dir: "down" },
-      { sel: ".section-numeros", label: "Proceso", dir: "down" },
-      { sel: "#proceso", label: "Materiales", dir: "down" },
-      { sel: ".section-materiales", label: "Enfoque", dir: "down" },
-      { sel: ".section-principio", label: "Materiales", dir: "down" },
-      { sel: ".section-enfoque", label: "Proyectos", dir: "down" },
-      { sel: ".section-detail-break", label: "Proyectos", dir: "down" },
-      { sel: "#proyectos", label: "Contacto", dir: "down" },
-      { sel: "#contacto", label: "Inicio", dir: "up" },
-    ];
+    const postHeroCTA = document.querySelector('.section-post-hero-cta');
+    const contactoEl = document.getElementById("contacto");
+    const lightSections = document.querySelectorAll(
+      '.section-post-hero-cta, .section-manifesto, .section-resenas, .section-enfoque, .section-proyectos'
+    );
 
-    const sections = sectionDefs.map((d, i) => {
-      const el = document.querySelector(d.sel);
-      return { ...d, el };
-    }).filter(d => d.el);
+    function updatePillColor() {
+      const pillRect = pill.getBoundingClientRect();
+      const pillCenter = pillRect.top + pillRect.height / 2;
+      let isLight = false;
+      lightSections.forEach(sec => {
+        const r = sec.getBoundingClientRect();
+        if (pillCenter >= r.top && pillCenter <= r.bottom) isLight = true;
+      });
+      pill.classList.toggle("floating-cta--light", isLight);
+    }
 
-    let currentDef = null;
-
-    // Use a single scroll callback to find which section the viewport
-    // center falls inside — uses getBoundingClientRect for accuracy
-    // with ScrollTrigger-pinned sections
     function onScroll() {
-      const halfVH = window.innerHeight / 2;
-      let match = null;
-      for (let i = sections.length - 1; i >= 0; i--) {
-        const s = sections[i];
-        const rect = s.el.getBoundingClientRect();
-        if (rect.top <= halfVH && rect.bottom >= halfVH) {
-          match = s;
-          break;
-        }
-      }
-      // If no section matched (gap between sections), find the nearest above
-      if (!match) {
-        let best = null;
-        let bestDist = Infinity;
-        for (const s of sections) {
-          const rect = s.el.getBoundingClientRect();
-          const dist = Math.abs(rect.bottom - halfVH);
-          if (rect.bottom <= halfVH && dist < bestDist) {
-            best = s;
-            bestDist = dist;
-          }
-        }
-        match = best || sections[0];
-      }
-      updateIndicator(match);
+      const postHeroRect = postHeroCTA ? postHeroCTA.getBoundingClientRect() : null;
+      const contactoRect = contactoEl ? contactoEl.getBoundingClientRect() : null;
+
+      const pastCTA = postHeroRect && postHeroRect.bottom < 0;
+      const inContacto = contactoRect && contactoRect.top < window.innerHeight * 0.5;
+
+      pill.classList.toggle("visible", pastCTA && !inContacto);
+      updatePillColor();
     }
 
     ScrollTrigger.create({
@@ -2059,46 +2035,8 @@
       end: "bottom bottom",
       onUpdate: onScroll,
     });
-    // Run once on init
+    window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
-
-    function updateIndicator(s) {
-      if (s === currentDef) return; // no change
-      // Hide during hero
-      if (s.sel === "#hero") {
-        indicator.classList.remove("visible");
-        currentDef = s;
-        return;
-      }
-      currentDef = s;
-      indicatorText.textContent = s.label;
-      indicator.classList.toggle("indicator-up", s.dir === "up");
-      indicator.classList.add("visible");
-    }
-
-    // Click to scroll
-    indicator.addEventListener("click", () => {
-      if (!currentDef) return;
-
-      if (currentDef.dir === "up") {
-        // Scroll to top
-        if (lenis) lenis.scrollTo(0, { duration: 1.5 });
-        else window.scrollTo({ top: 0, behavior: "smooth" });
-      } else {
-        // Find the target section by label
-        const targetMap = {
-          "Proyectos": "#proyectos",
-          "Contacto": "#contacto",
-          "Proceso": "#proceso",
-        };
-        const targetSel = targetMap[currentDef.label];
-        const targetEl = targetSel ? document.querySelector(targetSel) : null;
-        if (targetEl) {
-          if (lenis) lenis.scrollTo(targetEl, { duration: 1.2 });
-          else targetEl.scrollIntoView({ behavior: "smooth" });
-        }
-      }
-    });
   }
 
   // ============================================================
@@ -2374,14 +2312,129 @@
   }
 
   // ============================================================
+  // HAMBURGER MENU
+  // ============================================================
+  function initHamburger() {
+    const btn = document.getElementById("hamburger");
+    const overlay = document.getElementById("mobile-nav-overlay");
+    if (!btn || !overlay) return;
+
+    const links = overlay.querySelectorAll(".mobile-nav-link");
+
+    function toggle(open) {
+      const isOpen = typeof open === "boolean" ? open : !overlay.classList.contains("open");
+      overlay.classList.toggle("open", isOpen);
+      btn.classList.toggle("active", isOpen);
+      if (typeof lenis !== "undefined" && lenis) {
+        isOpen ? lenis.stop() : lenis.start();
+      }
+    }
+
+    btn.addEventListener("click", () => toggle());
+
+    links.forEach(link => {
+      link.addEventListener("click", () => toggle(false));
+    });
+
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape" && overlay.classList.contains("open")) {
+        toggle(false);
+      }
+    });
+  }
+
+  // ============================================================
+  // RESEÑAS CAROUSEL
+  // ============================================================
+  function initResenasCarousel() {
+    const carousel = document.getElementById("resenas-carousel");
+    const dotsContainer = document.getElementById("resenas-dots");
+    if (!carousel || !dotsContainer) return;
+
+    const cards = carousel.querySelectorAll(".resena-card");
+    if (!cards.length) return;
+
+    // Create dots
+    cards.forEach((_, i) => {
+      const dot = document.createElement("button");
+      dot.className = "resenas-dot" + (i === 0 ? " active" : "");
+      dot.setAttribute("aria-label", "Reseña " + (i + 1));
+      dot.addEventListener("click", () => {
+        cards[i].scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
+      });
+      dotsContainer.appendChild(dot);
+    });
+
+    const dots = dotsContainer.querySelectorAll(".resenas-dot");
+
+    // Update dots on scroll
+    let ticking = false;
+    carousel.addEventListener("scroll", () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const scrollLeft = carousel.scrollLeft;
+          const cardWidth = cards[0].offsetWidth + 32; // gap
+          const idx = Math.round(scrollLeft / cardWidth);
+          dots.forEach((d, i) => d.classList.toggle("active", i === idx));
+          ticking = false;
+        });
+        ticking = true;
+      }
+    });
+  }
+
+  // ============================================================
+  // CUSTOM SELECT DROPDOWN
+  // ============================================================
+  function initCustomSelect() {
+    const wrapper = document.getElementById("custom-select");
+    const trigger = document.getElementById("select-trigger");
+    const optionsList = document.getElementById("select-options");
+    const hiddenInput = document.getElementById("form-inversion");
+    if (!wrapper || !trigger || !optionsList || !hiddenInput) return;
+
+    const options = optionsList.querySelectorAll("li");
+
+    trigger.addEventListener("click", () => {
+      wrapper.classList.toggle("open");
+    });
+
+    options.forEach(opt => {
+      opt.addEventListener("click", () => {
+        const val = opt.dataset.value;
+        const text = opt.textContent;
+        hiddenInput.value = val;
+        trigger.textContent = text;
+        wrapper.classList.add("has-value");
+        wrapper.classList.remove("open");
+        options.forEach(o => o.classList.remove("selected"));
+        opt.classList.add("selected");
+      });
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!wrapper.contains(e.target)) {
+        wrapper.classList.remove("open");
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") wrapper.classList.remove("open");
+    });
+  }
+
+  // ============================================================
   // BOOT
   // ============================================================
+  initHamburger();
   initLoader();
   initHeroExpand();
   initHeroVideoTrim();
   initProjectOverlay();
   initCursor();
   initVideo();
+  initResenasCarousel();
+  initCustomSelect();
   if (window.innerWidth <= 640) initMobileCarousel();
 
   if (document.readyState === "loading") {

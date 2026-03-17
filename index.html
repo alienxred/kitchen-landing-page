@@ -44,14 +44,28 @@
         <a href="#proyectos">Proyectos</a>
         <a href="#contacto">Contacto</a>
       </div>
+      <button class="hamburger" id="hamburger" aria-label="Abrir men&uacute;">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+      </button>
     </nav>
   </header>
+
+  <!-- ====== MOBILE NAV OVERLAY ====== -->
+  <div class="mobile-nav-overlay" id="mobile-nav-overlay">
+    <nav class="mobile-nav-inner">
+      <a href="#proceso" class="mobile-nav-link">Proceso</a>
+      <a href="#proyectos" class="mobile-nav-link">Proyectos</a>
+      <a href="#contacto" class="mobile-nav-link">Contacto</a>
+    </nav>
+  </div>
 
   <!-- ====== SECTION 1: HERO ====== -->
   <section class="section section-hero" id="hero">
     <div class="hero-head">
       <h1 class="hero-headline">
-        <span class="hero-brand">Adentro</span>
+        <span class="hero-brand">adentro</span>
         <span class="hero-divider">|</span>
         <span class="hero-rotating-wrap">
           <span class="hero-rotating-word active">Studio</span>
@@ -75,6 +89,11 @@
         <path d="M8.15 16.63H8.82V0.36H8.15V16.63Z" fill="currentColor"/>
       </svg>
     </button>
+  </section>
+
+  <!-- ====== POST-HERO CTA ====== -->
+  <section class="section-post-hero-cta">
+    <a href="#contacto" class="post-hero-cta-btn">Agenda Ahora</a>
   </section>
 
   <!-- ====== SECTION 2: MANIFESTO (Giant Typography) ====== -->
@@ -188,56 +207,31 @@
     </div>
   </section>
 
-  <!-- ====== SECTION 6: PRINCIPIO (Typography Statement, Dark) ====== -->
-  <section class="section section-principio">
-    <div class="principio-inner reveal-stagger">
-      <div class="principio-rule"></div>
-      <blockquote class="principio-quote">
-        <span class="quote-line">La forma sigue</span>
-        <span class="quote-line">a la funci&oacute;n.</span>
-        <span class="quote-line accent-italic">La funci&oacute;n sigue</span>
-        <span class="quote-line accent-italic">a la vida.</span>
-      </blockquote>
-      <cite class="principio-cite">&mdash; Principio Adentro</cite>
+  <!-- ====== RESEÑAS ====== -->
+  <section class="section section-resenas" id="resenas">
+    <div class="resenas-inner reveal-stagger">
+      <span class="label">Rese&ntilde;as</span>
+      <h2 class="heading-display resenas-heading">Lo que dicen<br>nuestros clientes.</h2>
     </div>
-  </section>
-
-  <!-- ====== SECTION 7: MATERIALES (Full-Bleed Image Hero) ====== -->
-  <section class="section section-materiales">
-    <div class="materiales-image-wrap">
-      <img src="assets/kitchen-wide-1.webp" alt="Materiales de alta calidad" loading="lazy" class="materiales-image">
-    </div>
-    <div class="materiales-overlay"></div>
-    <div class="materiales-content reveal-stagger">
-      <span class="label label-light">Materiales</span>
-      <h2 class="heading-display heading-light">Calidad que<br>se siente.</h2>
-      <p class="body-text body-text-light">
-        Superficies de cuarzo, maderas certificadas, herrajes europeos &mdash; porque los detalles invisibles definen la calidad visible.
-      </p>
-    </div>
-  </section>
-
-  <!-- ====== SECTION 9: ENFOQUE (Editorial Split + Detail Image) ====== -->
-  <section class="section section-enfoque">
-    <div class="enfoque-grid">
-      <div class="enfoque-content reveal-stagger">
-        <span class="label">Enfoque</span>
-        <h2 class="heading-display">Dise&ntilde;o<br>integral.</h2>
-        <p class="body-text">
-          No solo dise&ntilde;amos muebles &mdash; dise&ntilde;amos la experiencia completa. Iluminaci&oacute;n, flujo de trabajo, almacenamiento inteligente. Cada elemento en di&aacute;logo con los dem&aacute;s.
-        </p>
+    <div class="resenas-carousel" id="resenas-carousel">
+      <div class="resena-card reveal">
+        <blockquote class="resena-text">&ldquo;Superaron nuestras expectativas. La atenci&oacute;n al detalle y la calidad de los materiales son incomparables.&rdquo;</blockquote>
+        <span class="resena-name">Mar&iacute;a</span>
       </div>
-      <div class="enfoque-image clip-reveal">
-        <img src="assets/kitchen-pendant.webp" alt="Dise&ntilde;o integral de cocina" loading="lazy">
+      <div class="resena-card reveal">
+        <blockquote class="resena-text">&ldquo;Desde el primer dise&ntilde;o hasta la instalaci&oacute;n, todo fue impecable. Nuestra cocina es exactamente como la so&ntilde;amos.&rdquo;</blockquote>
+        <span class="resena-name">Carlos</span>
+      </div>
+      <div class="resena-card reveal">
+        <blockquote class="resena-text">&ldquo;Profesionales de principio a fin. El proceso fue transparente y el resultado super&oacute; lo que imaginamos.&rdquo;</blockquote>
+        <span class="resena-name">Ana</span>
+      </div>
+      <div class="resena-card reveal">
+        <blockquote class="resena-text">&ldquo;La cocina que dise&ntilde;aron transform&oacute; por completo nuestro hogar. Cada detalle pensado para nuestra familia.&rdquo;</blockquote>
+        <span class="resena-name">Roberto</span>
       </div>
     </div>
-  </section>
-
-  <!-- ====== SECTION 10: DETAIL BREAK (Full-width single image) ====== -->
-  <section class="section section-detail-break">
-    <div class="detail-break-wrap">
-      <img src="assets/kitchen-dark.webp" alt="Detalle de cocina oscura" loading="lazy" class="detail-break-image">
-    </div>
+    <div class="resenas-dots" id="resenas-dots"></div>
   </section>
 
   <!-- ====== SECTION 11: PROYECTOS (Expanded Gallery) ====== -->
@@ -381,7 +375,59 @@
     <div class="carousel-dots" id="carousel-dots"></div>
   </section>
 
-  <!-- ====== SECTION 12: CONTACTO (CTA with background) ====== -->
+  <!-- ====== SECTION: PRINCIPIO (Typography Statement, Dark) ====== -->
+  <section class="section section-principio">
+    <div class="principio-inner reveal-stagger">
+      <div class="principio-rule"></div>
+      <blockquote class="principio-quote">
+        <span class="quote-line">La forma sigue</span>
+        <span class="quote-line">a la funci&oacute;n.</span>
+        <span class="quote-line accent-italic">La funci&oacute;n sigue</span>
+        <span class="quote-line accent-italic">a la vida.</span>
+      </blockquote>
+      <cite class="principio-cite">&mdash; Principio Adentro</cite>
+    </div>
+  </section>
+
+  <!-- ====== SECTION: MATERIALES (Full-Bleed Image Hero) ====== -->
+  <section class="section section-materiales">
+    <div class="materiales-image-wrap">
+      <img src="assets/kitchen-wide-1.webp" alt="Materiales de alta calidad" loading="lazy" class="materiales-image">
+    </div>
+    <div class="materiales-overlay"></div>
+    <div class="materiales-content reveal-stagger">
+      <span class="label label-light">Materiales</span>
+      <h2 class="heading-display heading-light">Calidad que<br>se siente.</h2>
+      <p class="body-text body-text-light">
+        Superficies de cuarzo, maderas certificadas, herrajes europeos &mdash; porque los detalles invisibles definen la calidad visible.
+      </p>
+    </div>
+  </section>
+
+  <!-- ====== SECTION: ENFOQUE (Editorial Split + Detail Image) ====== -->
+  <section class="section section-enfoque">
+    <div class="enfoque-grid">
+      <div class="enfoque-content reveal-stagger">
+        <span class="label">Enfoque</span>
+        <h2 class="heading-display">Dise&ntilde;o<br>integral.</h2>
+        <p class="body-text">
+          No solo dise&ntilde;amos muebles &mdash; dise&ntilde;amos la experiencia completa. Iluminaci&oacute;n, flujo de trabajo, almacenamiento inteligente. Cada elemento en di&aacute;logo con los dem&aacute;s.
+        </p>
+      </div>
+      <div class="enfoque-image clip-reveal">
+        <img src="assets/kitchen-pendant.webp" alt="Dise&ntilde;o integral de cocina" loading="lazy">
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== SECTION: DETAIL BREAK (Full-width single image) ====== -->
+  <section class="section section-detail-break">
+    <div class="detail-break-wrap">
+      <img src="assets/kitchen-dark.webp" alt="Detalle de cocina oscura" loading="lazy" class="detail-break-image">
+    </div>
+  </section>
+
+  <!-- ====== SECTION 12: CONTACTO (Form with background) ====== -->
   <section class="section section-contacto" id="contacto">
     <div class="contacto-bg">
       <img src="assets/detail-marble.webp" alt="" class="contacto-bg-image" loading="lazy">
@@ -393,7 +439,30 @@
       <p class="body-text body-text-light body-text-center">
         Cada cocina comienza con una conversaci&oacute;n. Cu&eacute;ntanos sobre tu espacio y tus ideas &mdash; nosotros nos encargamos del resto.
       </p>
-      <a href="mailto:hola@adentrostudio.mx" class="cta-button">Escr&iacute;benos</a>
+      <form class="contact-form" id="contact-form" action="#" method="POST">
+        <div class="form-group">
+          <input type="text" name="nombre" id="form-nombre" placeholder="Nombre" required autocomplete="name">
+        </div>
+        <div class="form-group">
+          <input type="email" name="correo" id="form-correo" placeholder="Correo" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <input type="tel" name="telefono" id="form-telefono" placeholder="Tel&eacute;fono" required autocomplete="tel">
+        </div>
+        <div class="form-group">
+          <div class="custom-select" id="custom-select">
+            <input type="hidden" name="inversion" id="form-inversion" required>
+            <div class="custom-select-trigger" id="select-trigger">Inversi&oacute;n estimada</div>
+            <ul class="custom-select-options" id="select-options">
+              <li data-value="menos-100k">Menos de $100,000</li>
+              <li data-value="mas-100k">M&aacute;s de $100,000</li>
+              <li data-value="mas-200k">M&aacute;s de $200,000</li>
+              <li data-value="mas-500k">M&aacute;s de $500,000</li>
+            </ul>
+          </div>
+        </div>
+        <button type="submit" class="cta-button cta-button-submit">Enviar</button>
+      </form>
     </div>
   </section>
 
@@ -431,13 +500,13 @@
     <div class="project-detail-inner" id="project-detail-inner"></div>
   </div>
 
-  <!-- ====== SECTION INDICATOR ====== -->
-  <div class="section-indicator" id="section-indicator">
-    <span class="indicator-text" id="indicator-text"></span>
-    <svg class="indicator-arrow-svg" width="10" height="10" viewBox="0 0 10 10" fill="none">
+  <!-- ====== FLOATING CTA PILL ====== -->
+  <a class="floating-cta" id="floating-cta" href="#contacto">
+    <span class="floating-cta-text">Agenda tu proyecto</span>
+    <svg class="floating-cta-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none">
       <path d="M5 1v7M2 5.5L5 8.5 8 5.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
-  </div>
+  </a>
 
   <!-- ====== CUSTOM CURSOR ====== -->
   <div class="custom-cursor" id="custom-cursor">
