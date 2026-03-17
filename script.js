@@ -1396,8 +1396,11 @@
     handle.addEventListener("pointerdown", (e) => {
       dragging = true;
       e.stopPropagation();
-      e.preventDefault();
-      handle.setPointerCapture(e.pointerId);
+      // Only capture + preventDefault for mouse — let touch through for pinch
+      if (e.pointerType !== "touch") {
+        e.preventDefault();
+        handle.setPointerCapture(e.pointerId);
+      }
       // Signal canvas controller to ignore zoom while slider active
       const vp = container.closest(".canvas-viewport");
       if (vp) vp.classList.add("slider-active");
@@ -2018,7 +2021,7 @@
       });
       if (isLight !== pillIsLight) {
         pillIsLight = isLight;
-        pill.classList.toggle("floating-cta--light", isLight);
+        pill.classList.toggle("floating-cta--light", !isLight);
       }
     }
 
@@ -2377,7 +2380,8 @@
       if (!ticking) {
         requestAnimationFrame(() => {
           const scrollLeft = carousel.scrollLeft;
-          const cardWidth = cards[0].offsetWidth + 32; // gap
+          const gap = parseFloat(getComputedStyle(carousel).gap) || 32;
+          const cardWidth = cards[0].offsetWidth + gap;
           const idx = Math.round(scrollLeft / cardWidth);
           dots.forEach((d, i) => d.classList.toggle("active", i === idx));
           ticking = false;

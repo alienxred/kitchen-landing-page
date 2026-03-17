@@ -879,6 +879,11 @@ a { color: inherit; text-decoration: none; }
   -webkit-overflow-scrolling: touch;
 }
 .resenas-carousel::-webkit-scrollbar { display: none; }
+.resenas-carousel::after {
+  content: '';
+  flex-shrink: 0;
+  width: 1px;
+}
 .resena-card {
   flex: 0 0 45%;
   padding: 2rem 0;
@@ -1294,15 +1299,16 @@ a { color: inherit; text-decoration: none; }
 .project-detail.active .project-close {
   opacity: 1;
 }
-/* On canvas: back is visible = canvas mode, frosted glass pill */
+/* On canvas: back is visible = canvas mode, adaptive text (no pill) */
 .project-back.visible,
 .project-back.visible ~ .project-close {
-  color: var(--bg-dark);
-  background: rgba(255,255,255,0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-radius: 2rem;
-  padding: 0.5rem 1rem;
+  color: white;
+  mix-blend-mode: difference;
+  background: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-radius: 0;
+  padding: 0.5rem;
 }
 .project-back:hover,
 .project-close:hover {
