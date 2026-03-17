@@ -1433,14 +1433,14 @@ a { color: inherit; text-decoration: none; }
   opacity: 0.6;
   transition: color 0.3s var(--ease-hover);
 }
-.floating-cta--light {
+.floating-cta.floating-cta--light {
   background: var(--bg-warm-white);
   color: var(--text-primary);
 }
-.floating-cta--light:hover {
+.floating-cta.floating-cta--light:hover {
   background: var(--bg-taupe);
 }
-.floating-cta--light .floating-cta-arrow {
+.floating-cta.floating-cta--light .floating-cta-arrow {
   color: var(--text-primary);
 }
 

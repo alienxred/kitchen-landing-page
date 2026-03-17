@@ -2007,6 +2007,7 @@
       '.section-post-hero-cta, .section-manifesto, .section-resenas, .section-enfoque, .section-proyectos'
     );
 
+    let pillIsLight = false;
     function updatePillColor() {
       const pillRect = pill.getBoundingClientRect();
       const pillCenter = pillRect.top + pillRect.height / 2;
@@ -2015,7 +2016,10 @@
         const r = sec.getBoundingClientRect();
         if (pillCenter >= r.top && pillCenter <= r.bottom) isLight = true;
       });
-      pill.classList.toggle("floating-cta--light", isLight);
+      if (isLight !== pillIsLight) {
+        pillIsLight = isLight;
+        pill.classList.toggle("floating-cta--light", isLight);
+      }
     }
 
     function onScroll() {
